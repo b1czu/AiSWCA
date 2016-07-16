@@ -6,8 +6,8 @@
 #include "stm32f070x6.h"
 #include "stm32f0xx_hal.h"
 
-//#include "device_cfg.h"
-//#include "firmware_cfg.h"
+#include "device_cfg.h"
+#include "firmware_cfg.h"
 #include "error.h"
 
 #include "cli.h"
