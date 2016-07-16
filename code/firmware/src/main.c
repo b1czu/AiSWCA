@@ -25,7 +25,7 @@ void SystemClock_Config(void)
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     #warning TODO
-    err_handler(__FILE__,__LINE__,"BAGGOR INFO");
+    err_handler(__FILE__,__LINE__,"BUG INFO");
   }
 
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
@@ -36,7 +36,7 @@ void SystemClock_Config(void)
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
   {
     #warning TODO
-    err_handler(__FILE__,__LINE__,"BAGGOR INFO");
+    err_handler(__FILE__,__LINE__,"BUG INFO");
   }
 
   PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1;
@@ -44,7 +44,7 @@ void SystemClock_Config(void)
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
     #warning TODO
-    err_handler(__FILE__,__LINE__,"BAGGOR INFO");
+    err_handler(__FILE__,__LINE__,"BUG INFO");
   }
 
   HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
@@ -62,6 +62,7 @@ int main(void)
   SystemClock_Config();
 
   led_init();
+  cli_init(); 
 
   while (1)
   {

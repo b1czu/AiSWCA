@@ -10,7 +10,7 @@
 //#include "firmware_cfg.h"
 #include "error.h"
 
-//#include "cli.h"
+#include "cli.h"
 //#include "kbus.h"
 //#include "pot.h"
 //#include "dpot.h"
