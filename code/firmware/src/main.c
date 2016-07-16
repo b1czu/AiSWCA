@@ -62,6 +62,8 @@ int main(void)
   SystemClock_Config();
 
   led_init();
+  dpot_init();
+  kbus_init();
   cli_init(); 
 
   while (1)

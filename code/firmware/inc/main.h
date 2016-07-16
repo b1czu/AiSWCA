@@ -11,9 +11,8 @@
 #include "error.h"
 
 #include "cli.h"
-//#include "kbus.h"
-//#include "pot.h"
-//#include "dpot.h"
+#include "kbus.h"
+#include "dpot.h"
 #include "led.h"
 
 #endif /* __MAIN_H */
