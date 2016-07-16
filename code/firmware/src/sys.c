@@ -20,13 +20,11 @@ uint64_t sys_get_time(void)
 /* SYSTEM IRQ */
 void SysTick_Handler(void)
 {
-  static int a = 0;
-  if(a%2000 == 1){
-   led_1Toggle();
-  }
-  a++;
   /* LED task */
-
+  if(sys_time % 1000 == 0){
+   	led_1Toggle();
+  }
+  
   /* Next task */	
   HAL_IncTick();
   HAL_SYSTICK_IRQHandler();
@@ -40,6 +38,6 @@ void HardFault_Handler(void)
   /* Go to infinite loop when Hard Fault exception occurs */
   while (1)
   {
-    led_1On();
+  	led_1On();
   }
 }

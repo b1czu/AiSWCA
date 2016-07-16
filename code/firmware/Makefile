@@ -1,5 +1,5 @@
 #TOOLCHAIN CFG
-TOOLCHAIN = /home/piotr/gcc-arm-none-eabi/bin/arm-none-eabi-
+TOOLCHAIN = /opt/gcc-arm-none-eabi/bin/arm-none-eabi-
 #(eg. TOOLCHAIN = /home/xxx/gcc-arm-none-eabi-5_3-2016q1/bin/arm-none-eabi-)
 
 ifndef TOOLCHAIN
@@ -30,9 +30,8 @@ INCLUDEDIRS += ./CMSIS/Device/ST/STM32F0xx/Include
 INCLUDEDIRS_LIBS += ./../lib/STM32F0xx_HAL_Driver/Inc
 INCLUDEDIRS_LIBS += ./lib
 
-
-# auto-generated project paths
 SOURCES = $(shell find . -name *.c)
+# auto-generated project paths
 SOURCES += CMSIS/startup_stm32f070x6.s # add assembly startup template
 
 LDSCRIPT = ./CMSIS/STM32F070x6_FLASH.ld
@@ -54,7 +53,7 @@ OPTIMIZATION = -O0
 C_STD = c11
 
 EXTRA_DEFS = 
-EXTRA_DEFS += 
+EXTRA_DEFS += USE_HAL_DRIVER
 
 CFLAGS_LIBS = 
 CFLAGS_LIBS += -L ./../lib/STM32F0xx_HAL_Driver

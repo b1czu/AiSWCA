@@ -1,5 +1,5 @@
 #TOOLCHAIN CFG
-TOOLCHAIN = /home/piotr/gcc-arm-none-eabi/bin/arm-none-eabi-
+TOOLCHAIN = /opt/gcc-arm-none-eabi/bin/arm-none-eabi-
 #(eg. TOOLCHAIN = /home/xxx/gcc-arm-none-eabi-5_3-2016q1/bin/arm-none-eabi-)
 
 # TOOLCHAIN DEF
@@ -42,6 +42,7 @@ C_STD = c11
 EXTRA_DEFS = 
 EXTRA_DEFS += -D LSE_STARTUP_TIMEOUT=100
 EXTRA_DEFS += -D HSE_STARTUP_TIMEOUT=100
+EXTRA_DEFS += -D USE_HAL_DRIVER
 
 
 CFLAGS = -Wall -g -std=$(C_STD) $(OPTIMIZATION) -D $(CPU_MODEL_GENERAL)
