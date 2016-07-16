@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# Extra
+*.elf
+*.hex
+*.lst
+*.map
