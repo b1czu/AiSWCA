@@ -66,22 +66,10 @@
   * @param  None
   * @retval None
   */
+
 void NMI_Handler(void)
 {
-}
 
-/**
-  * @brief  This function handles Hard Fault exception.
-  * @param  None
-  * @retval None
-  */
-void HardFault_Handler(void)
-{
-  /* Go to infinite loop when Hard Fault exception occurs */
-  while (1)
-  {
-    led1On();
-  }
 }
 
 
@@ -92,6 +80,7 @@ void HardFault_Handler(void)
   */
 void SVC_Handler(void)
 {
+
 }
 
 
@@ -102,22 +91,9 @@ void SVC_Handler(void)
   */
 void PendSV_Handler(void)
 {
+
 }
 
-/**
-  * @brief  This function handles SysTick Handler.
-  * @param  None
-  * @retval None
-  */
-void SysTick_Handler(void)
-{
-  static int a = 0;
-  if(a%100 == 1){
-    //GPIOA->ODR ^= (1<<4);
-  }
-  a++;
-  HAL_IncTick();
-}
 
 /******************************************************************************/
 /*                 STM32F0xx Peripherals Interrupt Handlers                   */

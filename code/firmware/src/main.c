@@ -61,6 +61,8 @@ int main(void)
   HAL_Init();
   SystemClock_Config();
 
+  led_init();
+
   while (1)
   {
     __WFI();
