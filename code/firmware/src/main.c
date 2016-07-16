@@ -66,6 +66,13 @@ int main(void)
   kbus_init();
   cli_init(); 
 
+  sys_print_info();
+
+  #warning OUT
+  LOG_INFO("TEST");
+  LOG_DEBUG("TEST");
+  LOG_ERROR("TEST");
+  
   while (1)
   {
     __WFI();

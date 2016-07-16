@@ -15,14 +15,23 @@ uint64_t sys_get_time(void)
 	return sys_time;
 }
 
+void sys_print_info(void)
+{
+	printf_("AiSWCA v%s %s %s\n\r",FW_VERSION,__DATE__,__TIME__);
+	printf_("build %s\n\r",BUILD);
+	printf_("HW v%s\n\r", HW_VERSION);	
+}
+
 /*---- IRQ ------------------------------------------------------------*/
 
 /* SYSTEM IRQ */
 void SysTick_Handler(void)
 {
   /* LED task */
+	static uint64_t i = 0;
   if(sys_time % 1000 == 0){
    	led_1Toggle();
+   	LOG_INFO("%s %d","TEST",(int)i++ );
   }
   
   /* Next task */	

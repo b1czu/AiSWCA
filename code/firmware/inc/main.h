@@ -2,6 +2,7 @@
 #define __MAIN_H
 
 #include <stdint.h>
+#include "printf.h"
 
 #include "stm32f070x6.h"
 #include "stm32f0xx_hal.h"
