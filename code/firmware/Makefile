@@ -39,9 +39,11 @@ LDSCRIPT = ./CMSIS/STM32F070x6_FLASH.ld
 # extra external lib src
 SOURCES += $(shell find ./ext_lib/itoa-1.0.0-090713/ -name *.c)
 SOURCES += $(shell find ./ext_lib/printf-1.0.0-091002/ -name *.c)
+SOURCES += $(shell find ./ext_lib/fifo/ -name *.c)
 # extra external lib inc 
 INCLUDEDIRS += ./ext_lib/itoa-1.0.0-090713/
 INCLUDEDIRS += ./ext_lib/printf-1.0.0-091002/
+INCLUDEDIRS += ./ext_lib/fifo/
 
 # "-O0" - no optimization, 
 # "-O1" - optimize, 

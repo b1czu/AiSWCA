@@ -2,7 +2,10 @@
 #define __MAIN_H
 
 #include <stdint.h>
+
+//ext lib
 #include "printf.h"
+#include "fifo.h"
 
 #include "stm32f070x6.h"
 #include "stm32f0xx_hal.h"
