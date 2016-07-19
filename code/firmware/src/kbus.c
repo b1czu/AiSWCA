@@ -80,7 +80,7 @@ static void kbus_frame_handler(KBUS_HandleTypeDef* hkbus)
 		 * If no, just wait for next byte.
 		 * LENGTH is stored in KBUS buffer at frame[1].
 		 */
-		if (hkbus->framePos >= hkbus->frame[1] + 1)
+		if (hkbus->framePos >= hkbus->frame[1] + 2)
 		{
 			uint8_t crc = 0;
 			/* Take all bytes without last one (CRC) and count checksum (KBUS frame spec)*/
