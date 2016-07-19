@@ -12,7 +12,7 @@
 /* Exported types ------------------------------------------------------------*/
 
 /**
-  * @brief  DPOT_ADDRESS DPOT Address enumeration
+  * @brief  KBUS_FrameState KBUS Frame parser state enumeration
   */
 typedef enum
 {
