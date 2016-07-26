@@ -64,6 +64,7 @@ int main(void)
   led_init();
   dpot_init();
   kbus_init();
+  adc_init();
   cli_init(); 
 
   sys_print_info();

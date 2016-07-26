@@ -18,5 +18,6 @@
 #include "kbus.h"
 #include "dpot.h"
 #include "led.h"
+#include "adc.h"
 
 #endif /* __MAIN_H */
