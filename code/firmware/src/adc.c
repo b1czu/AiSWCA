@@ -1,6 +1,19 @@
 #include "adc.h"
 #include "main.h"
 
+/*---- Variable ------------------------------------------------------*/
+
+typedef enum
+{
+  ADC_DATA_STATE_WAIT_FOR_NEW_DATA = 0,
+  ADC_DATA_STATE_NEW_DATA,
+}adc_data_state_e;
+
+typedef struct adc_logic_s{
+  uint16_t data;
+  adc_data_state_e data_state;
+}adc_logic_t;
+
 /*---- Define function -----------------------------------------------*/
 
 #define RANGE_12BITS                   ((uint32_t) 4095)    /* Max digital value with a full range of 12 bits */
@@ -24,20 +37,93 @@ TIM_HandleTypeDef    timh;
 /* Variable containing ADC conversions results */
 __IO uint16_t   adc_convert_value_buff[ADCCONVERTEDVALUES_BUFFER_SIZE];
 
+/* Struct containing ADC logic */
+static adc_logic_t adc_logic_container;
+
 
 /*---- Static function declaration -----------------------------------*/
 
+static void adc_tim_config(void);
 static void adc_hw_init(void);
 static void adc_logic_init(void);
 
 /*---- Function definition --------------------------------------------*/
 
 void adc_init(void){
-  adc_tim_config();
-	adc_hw_init();
+	adc_tim_config();
 	adc_logic_init();
+	adc_hw_init();
 }
 
+
+static void adc_tim_config(void)
+{
+  TIM_MasterConfigTypeDef master_timer_config;
+  RCC_ClkInitTypeDef clk_init_struct = {0};       /* Temporary variable to retrieve RCC clock configuration */
+  uint32_t latency;                               /* Temporary variable to retrieve Flash Latency */
+
+  uint32_t timer_clock_frequency = 0;             /* Timer clock frequency */
+  uint32_t timer_prescaler = 0;                   /* Time base prescaler to have timebase aligned on minimum frequency possible */
+
+  /* Configuration of timer as time base:                                     */
+  /* Caution: Computation of frequency is done for a timer instance on APB1   */
+  /*          (clocked by PCLK1)                                              */
+  /* Timer frequency is configured from the following constants:              */
+  /* - TIMER_FREQUENCY: timer frequency (unit: Hz).                           */
+  /* - TIMER_FREQUENCY_RANGE_MIN: timer minimum frequency possible            */
+  /*   (unit: Hz).                                                            */
+  /* Note: Refer to comments at these literals definition for more details.   */
+
+  /* Retrieve timer clock source frequency */
+  HAL_RCC_GetClockConfig(&clk_init_struct, &latency);
+  /* If APB1 prescaler is different of 1, timers have a factor x2 on their    */
+  /* clock source.                                                            */
+  if (clk_init_struct.APB1CLKDivider == RCC_HCLK_DIV1)
+  {
+    timer_clock_frequency = HAL_RCC_GetPCLK1Freq();
+  }
+  else
+  {
+    timer_clock_frequency = HAL_RCC_GetPCLK1Freq() *2;
+  }
+
+  /* Timer prescaler calculation */
+  /* (computation for timer 16 bits, additional + 1 to round the prescaler up) */
+  timer_prescaler = (timer_clock_frequency / (TIMER_PRESCALER_MAX_VALUE * TIMER_FREQUENCY_RANGE_MIN)) +1;
+
+  /* Set timer instance */
+  timh.Instance = TIM3;
+
+  /* Configure timer parameters */
+  timh.Init.Period            = ((timer_clock_frequency / (timer_prescaler * TIMER_FREQUENCY)) - 1);
+  timh.Init.Prescaler         = (timer_prescaler - 1);
+  timh.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
+  timh.Init.CounterMode       = TIM_COUNTERMODE_UP;
+  timh.Init.RepetitionCounter = 0x0;
+
+  if (HAL_TIM_Base_Init(&timh) != HAL_OK)
+  {
+    /* Timer initialization Error */
+    LOG_ERROR("HAL_TIM_Base_Init != HAL_OK");
+  }
+
+  /* Timer TRGO selection */
+  master_timer_config.MasterOutputTrigger = TIM_TRGO_UPDATE;
+  master_timer_config.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+
+  if (HAL_TIMEx_MasterConfigSynchronization(&timh, &master_timer_config) != HAL_OK)
+  {
+    /* Timer TRGO selection Error */
+    LOG_ERROR("HAL_TIMEx_MasterConfigSynchronization != HAL_OK");
+  }
+
+  /* Timer enable */
+  if (HAL_TIM_Base_Start(&timh) != HAL_OK)
+  {
+    /* Counter Enable Error */
+    LOG_ERROR("HAL_TIM_Base_Start != HAL_OK");
+  }
+}
 
 static void adc_hw_init(void)
 {
@@ -114,77 +200,25 @@ static void adc_hw_init(void)
 
 static void adc_logic_init(void)
 {
-
+  adc_logic_container.data = 0;
+  adc_logic_container.data_state = ADC_DATA_STATE_WAIT_FOR_NEW_DATA;
 }
 
-
-void adc_tim_config(void)
+void adc_logic(void)
 {
-  TIM_MasterConfigTypeDef master_timer_config;
-  RCC_ClkInitTypeDef clk_init_struct = {0};       /* Temporary variable to retrieve RCC clock configuration */
-  uint32_t latency;                               /* Temporary variable to retrieve Flash Latency */
-  
-  uint32_t timer_clock_frequency = 0;             /* Timer clock frequency */
-  uint32_t timer_prescaler = 0;                   /* Time base prescaler to have timebase aligned on minimum frequency possible */
+	/* new data, it's time to process it and set dpot on correct value */
+	if(adc_logic_container.data_state == ADC_DATA_STATE_NEW_DATA){
+		LOG_DEBUG("adc %d",adc_logic_container.data);
+		adc_logic_container.data_state = ADC_DATA_STATE_WAIT_FOR_NEW_DATA;
 
-  /* Configuration of timer as time base:                                     */ 
-  /* Caution: Computation of frequency is done for a timer instance on APB1   */
-  /*          (clocked by PCLK1)                                              */
-  /* Timer frequency is configured from the following constants:              */
-  /* - TIMER_FREQUENCY: timer frequency (unit: Hz).                           */
-  /* - TIMER_FREQUENCY_RANGE_MIN: timer minimum frequency possible            */
-  /*   (unit: Hz).                                                            */
-  /* Note: Refer to comments at these literals definition for more details.   */
-  
-  /* Retrieve timer clock source frequency */
-  HAL_RCC_GetClockConfig(&clk_init_struct, &latency);
-  /* If APB1 prescaler is different of 1, timers have a factor x2 on their    */
-  /* clock source.                                                            */
-  if (clk_init_struct.APB1CLKDivider == RCC_HCLK_DIV1)
-  {
-    timer_clock_frequency = HAL_RCC_GetPCLK1Freq();
-  }
-  else
-  {
-    timer_clock_frequency = HAL_RCC_GetPCLK1Freq() *2;
-  }
-  
-  /* Timer prescaler calculation */
-  /* (computation for timer 16 bits, additional + 1 to round the prescaler up) */
-  timer_prescaler = (timer_clock_frequency / (TIMER_PRESCALER_MAX_VALUE * TIMER_FREQUENCY_RANGE_MIN)) +1;
-  
-  /* Set timer instance */
-  timh.Instance = TIM3;
-  
-  /* Configure timer parameters */
-  timh.Init.Period            = ((timer_clock_frequency / (timer_prescaler * TIMER_FREQUENCY)) - 1);
-  timh.Init.Prescaler         = (timer_prescaler - 1);
-  timh.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
-  timh.Init.CounterMode       = TIM_COUNTERMODE_UP;
-  timh.Init.RepetitionCounter = 0x0;
-  
-  if (HAL_TIM_Base_Init(&timh) != HAL_OK)
-  {
-    /* Timer initialization Error */
-    LOG_ERROR("HAL_TIM_Base_Init != HAL_OK");
-  }
+		// dpot set data
 
-  /* Timer TRGO selection */
-  master_timer_config.MasterOutputTrigger = TIM_TRGO_UPDATE;
-  master_timer_config.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+	}
+	/* button is released, disconnect dpot */
+	else{
+		// dpot off
 
-  if (HAL_TIMEx_MasterConfigSynchronization(&timh, &master_timer_config) != HAL_OK)
-  {
-    /* Timer TRGO selection Error */
-    LOG_ERROR("HAL_TIMEx_MasterConfigSynchronization != HAL_OK");
-  }
-
-  /* Timer enable */
-  if (HAL_TIM_Base_Start(&timh) != HAL_OK)
-  {
-    /* Counter Enable Error */
-    LOG_ERROR("HAL_TIM_Base_Start != HAL_OK");
-  }
+	}
 }
 
 /*---- ADC Callback ------------------------------------------------------------*/
@@ -220,8 +254,15 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* adch)
 {
   /* Set variable to report analog watchdog out of window status to main      */
   /* program.                                                                 */
-  static int i;
-  LOG_DEBUG("%d ADC %d", i++,(int) adc_convert_value_buff[0]);
+
+  //DEBUG
+  //static int i;
+  //LOG_DEBUG("%d ADC %d", i++,(int) adc_convert_value_buff[0]);
+
+  //get data from buff and set
+  adc_logic_container.data = adc_convert_value_buff[0];
+  adc_logic_container.data_state = ADC_DATA_STATE_NEW_DATA;
+
 }
 
 /**

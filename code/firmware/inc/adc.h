@@ -40,6 +40,7 @@ HAL_ADC_LevelOutOfWindowCallback			|
  */
 
 void adc_init(void);
+void adc_logic(void);
 
 void ADC1_IRQHandler(void);
 void DMA1_Channel1_IRQHandler(void);

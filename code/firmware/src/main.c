@@ -75,9 +75,10 @@ int main(void)
   dpot_init();
   kbus_init();
   adc_init();
-    
+
   while (1)
   {
+    adc_logic();
     __WFI();
   }
 }
@@ -99,6 +100,7 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* Infinite loop */
   while (1)
   {
+
   }
 }
 #endif
