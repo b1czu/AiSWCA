@@ -319,8 +319,34 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
 
 }
 
-/* USER CODE BEGIN 1 */
 
+/* USER CODE BEGIN 1 */
+/**
+  * @brief TIM MSP initialization
+  *        This function configures the hardware resources used in this example:
+  *          - Enable clock of peripheral
+  * @param htim: TIM handle pointer
+  * @retval None
+  */
+void HAL_TIM_Base_MspInit(TIM_HandleTypeDef *htim)
+{
+  /* TIM peripheral clock enable */
+  __HAL_RCC_TIM3_CLK_ENABLE();
+}
+
+/**
+  * @brief TIM MSP de-initialization
+  *        This function frees the hardware resources used in this example:
+  *          - Disable clock of peripheral
+  * @param htim: TIM handle pointer
+  * @retval None
+  */
+void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef *htim)
+{
+  /*##-1- Reset peripherals ##################################################*/
+  __HAL_RCC_TIM3_FORCE_RESET();
+  __HAL_RCC_TIM3_RELEASE_RESET();
+}
 /* USER CODE END 1 */
 
 /**

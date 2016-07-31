@@ -8,10 +8,18 @@
 /* ADC parameters */
 #define ADCCONVERTEDVALUES_BUFFER_SIZE ((uint32_t)  1)    /* Size of array containing ADC converted values */
 
+
+#define TIMER_FREQUENCY                ((uint32_t)   10)    /* Timer frequency (unit: Hz). With a timer 16 bits and time base freq min 1Hz, range is min=1Hz, max=32kHz. */
+#define TIMER_FREQUENCY_RANGE_MIN      ((uint32_t)    1)    /* Timer minimum frequency (unit: Hz), used to calculate frequency range. With a timer 16 bits, maximum frequency will be 32000 times this value. */
+#define TIMER_PRESCALER_MAX_VALUE      (0xFFFF-1)           /* Timer prescaler maximum value (0xFFFF for a timer 16 bits) */
+
 /*---- Static variable -----------------------------------------------*/
 
 /* ADC handler declaration */
 ADC_HandleTypeDef hadc;
+
+/* TIM handler declaration */
+TIM_HandleTypeDef    TimHandle;
 
 /* Variable containing ADC conversions results */
 __IO uint16_t   adc_convert_value_buff[ADCCONVERTEDVALUES_BUFFER_SIZE];
@@ -25,6 +33,7 @@ static void adc_logic_init(void);
 /*---- Function definition --------------------------------------------*/
 
 void adc_init(void){
+  adc_tim_config();
 	adc_hw_init();
 	adc_logic_init();
 }
@@ -32,6 +41,7 @@ void adc_init(void){
 
 static void adc_hw_init(void)
 {
+
   ADC_ChannelConfTypeDef sConfig;
   ADC_AnalogWDGConfTypeDef AnalogWDGConfig;
 
@@ -43,10 +53,10 @@ static void adc_hw_init(void)
   hadc.Init.EOCSelection          = ADC_EOC_SINGLE_CONV;
   hadc.Init.LowPowerAutoWait      = DISABLE;
   hadc.Init.LowPowerAutoPowerOff  = DISABLE;
-  hadc.Init.ContinuousConvMode    = ENABLE;                        /* Continuous mode to have maximum conversion speed (no delay between conversions) */
+  hadc.Init.ContinuousConvMode    = DISABLE;                        /* Continuous mode to have maximum conversion speed (no delay between conversions) */
   hadc.Init.DiscontinuousConvMode = DISABLE;                       /* Parameter discarded because sequencer is disabled */
-  hadc.Init.ExternalTrigConv      = ADC_SOFTWARE_START;            /* Software start to trig the 1st conversion manually, without external event */
-  hadc.Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_NONE; /* Parameter discarded because trig of conversion by software start (no external event) */
+  hadc.Init.ExternalTrigConv      = ADC_EXTERNALTRIGCONV_T3_TRGO;  /* Trig of conversion start done by external event */
+  hadc.Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_RISING;
   hadc.Init.DMAContinuousRequests = ENABLE;                        /* ADC-DMA continuous requests to match with DMA configured in circular mode */
   hadc.Init.Overrun               = ADC_OVR_DATA_OVERWRITTEN;
   hadc.Init.SamplingTimeCommon    = ADC_SAMPLETIME_41CYCLES_5;
@@ -105,6 +115,76 @@ static void adc_hw_init(void)
 static void adc_logic_init(void)
 {
 
+}
+
+
+void adc_tim_config(void)
+{
+  TIM_MasterConfigTypeDef master_timer_config;
+  RCC_ClkInitTypeDef clk_init_struct = {0};       /* Temporary variable to retrieve RCC clock configuration */
+  uint32_t latency;                               /* Temporary variable to retrieve Flash Latency */
+  
+  uint32_t timer_clock_frequency = 0;             /* Timer clock frequency */
+  uint32_t timer_prescaler = 0;                   /* Time base prescaler to have timebase aligned on minimum frequency possible */
+
+  /* Configuration of timer as time base:                                     */ 
+  /* Caution: Computation of frequency is done for a timer instance on APB1   */
+  /*          (clocked by PCLK1)                                              */
+  /* Timer frequency is configured from the following constants:              */
+  /* - TIMER_FREQUENCY: timer frequency (unit: Hz).                           */
+  /* - TIMER_FREQUENCY_RANGE_MIN: timer minimum frequency possible            */
+  /*   (unit: Hz).                                                            */
+  /* Note: Refer to comments at these literals definition for more details.   */
+  
+  /* Retrieve timer clock source frequency */
+  HAL_RCC_GetClockConfig(&clk_init_struct, &latency);
+  /* If APB1 prescaler is different of 1, timers have a factor x2 on their    */
+  /* clock source.                                                            */
+  if (clk_init_struct.APB1CLKDivider == RCC_HCLK_DIV1)
+  {
+    timer_clock_frequency = HAL_RCC_GetPCLK1Freq();
+  }
+  else
+  {
+    timer_clock_frequency = HAL_RCC_GetPCLK1Freq() *2;
+  }
+  
+  /* Timer prescaler calculation */
+  /* (computation for timer 16 bits, additional + 1 to round the prescaler up) */
+  timer_prescaler = (timer_clock_frequency / (TIMER_PRESCALER_MAX_VALUE * TIMER_FREQUENCY_RANGE_MIN)) +1;
+  
+  /* Set timer instance */
+  TimHandle.Instance = TIM3;
+  
+  /* Configure timer parameters */
+  TimHandle.Init.Period            = ((timer_clock_frequency / (timer_prescaler * TIMER_FREQUENCY)) - 1);
+  TimHandle.Init.Prescaler         = (timer_prescaler - 1);
+  TimHandle.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
+  TimHandle.Init.CounterMode       = TIM_COUNTERMODE_UP;
+  TimHandle.Init.RepetitionCounter = 0x0;
+  
+  if (HAL_TIM_Base_Init(&TimHandle) != HAL_OK)
+  {
+    /* Timer initialization Error */
+    LOG_ERROR("HAL_TIM_Base_Init != HAL_OK");
+  }
+
+  /* Timer TRGO selection */
+  master_timer_config.MasterOutputTrigger = TIM_TRGO_UPDATE;
+  master_timer_config.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+
+  if (HAL_TIMEx_MasterConfigSynchronization(&TimHandle, &master_timer_config) != HAL_OK)
+  {
+    /* Timer TRGO selection Error */
+    LOG_ERROR("HAL_TIMEx_MasterConfigSynchronization != HAL_OK");
+  }
+
+  /* Timer enable */
+  if (HAL_TIM_Base_Start(&TimHandle) != HAL_OK)
+  {
+    /* Counter Enable Error */
+    LOG_ERROR("HAL_TIM_Base_Start != HAL_OK");
+  }
 }
 
 /*---- ADC Callback ------------------------------------------------------------*/
