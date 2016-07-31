@@ -5,6 +5,9 @@
 
 void adc_init(void);
 
-uint32_t adc_get_data(void);
+
+void ADC1_IRQHandler(void);
+void DMA1_Channel1_IRQHandler(void);
+
 
 #endif /* __ADC_H */

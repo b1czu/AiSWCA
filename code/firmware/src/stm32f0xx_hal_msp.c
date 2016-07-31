@@ -67,6 +67,9 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
 {
 
   GPIO_InitTypeDef GPIO_InitStruct;
+  static DMA_HandleTypeDef  DmaHandle;
+  RCC_OscInitTypeDef        RCC_OscInitStructure;
+
   if(hadc->Instance==ADC1)
   {
   /* USER CODE BEGIN ADC1_MspInit 0 */
@@ -85,10 +88,56 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
 
   /* USER CODE BEGIN ADC1_MspInit 1 */
 
+  /* Note: In case of usage of asynchronous clock derived from ADC dedicated  */
+  /*       HSI RC oscillator 14MHz, with ADC setting                          */
+  /*       "AdcHandle.Init.ClockPrescaler = ADC_CLOCK_ASYNC_DIV1",                 */
+  /*       the clock source has to be enabled at RCC top level using function */
+  /*       "HAL_RCC_OscConfig()" (see comments in stm32l1_hal_adc.c header)   */
+
+  /* Enable asynchronous clock source of ADCx */
+  /* (place oscillator HSI14 under control of the ADC) */
+  HAL_RCC_GetOscConfig(&RCC_OscInitStructure);
+  RCC_OscInitStructure.OscillatorType = RCC_OSCILLATORTYPE_HSI14;
+  RCC_OscInitStructure.HSI14CalibrationValue = RCC_HSI14CALIBRATION_DEFAULT;
+  RCC_OscInitStructure.HSI14State = RCC_HSI14_ADC_CONTROL;
+  HAL_RCC_OscConfig(&RCC_OscInitStructure);
+
+  /* Enable clock of DMA associated to the peripheral */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* Configure DMA parameters */
+  DmaHandle.Instance = DMA1_Channel1;
+
+  DmaHandle.Init.Direction           = DMA_PERIPH_TO_MEMORY;
+  DmaHandle.Init.PeriphInc           = DMA_PINC_DISABLE;
+  DmaHandle.Init.MemInc              = DMA_MINC_ENABLE;
+  DmaHandle.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;   /* Transfer from ADC by half-word to match with ADC configuration: ADC resolution 10 or 12 bits */
+  DmaHandle.Init.MemDataAlignment    = DMA_MDATAALIGN_HALFWORD;   /* Transfer to memory by half-word to match with buffer variable type: half-word */
+  DmaHandle.Init.Mode                = DMA_CIRCULAR;              /* DMA in circular mode to match with ADC configuration: DMA continuous requests */
+  DmaHandle.Init.Priority            = DMA_PRIORITY_HIGH;
+
+  /* Deinitialize  & Initialize the DMA for new transfer */
+  HAL_DMA_DeInit(&DmaHandle);
+  HAL_DMA_Init(&DmaHandle);
+
+  /* Associate the initialized DMA handle to the ADC handle */
+  __HAL_LINKDMA(hadc, DMA_Handle, DmaHandle);
+
+  /* NVIC configuration for DMA interrupt (transfer completion or error) */
+  /* Priority: high-priority */
+  HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 1, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);  
+
+  /* NVIC configuration for ADC interrupt */
+  /* Priority: high-priority */
+  HAL_NVIC_SetPriority(ADC1_COMP_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(ADC1_COMP_IRQn);
+
   /* USER CODE END ADC1_MspInit 1 */
   }
 
 }
+
 
 void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
 {
@@ -106,6 +155,14 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
     */
     HAL_GPIO_DeInit(GPIOA, GPIO_PIN_1);
 
+    if(hadc->DMA_Handle != NULL)
+    {
+      HAL_DMA_DeInit(hadc->DMA_Handle);
+    }
+
+    HAL_NVIC_DisableIRQ(DMA1_Channel1_IRQn);
+
+    HAL_NVIC_DisableIRQ(ADC1_COMP_IRQn);
   }
   /* USER CODE BEGIN ADC1_MspDeInit 1 */
 
