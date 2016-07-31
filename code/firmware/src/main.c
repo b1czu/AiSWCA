@@ -61,11 +61,8 @@ int main(void)
   HAL_Init();
   SystemClock_Config();
 
-  led_init();
-  dpot_init();
-  kbus_init();
-  adc_init();
-  cli_init(); 
+  cli_init();
+
 
   sys_print_info();
 
@@ -73,7 +70,12 @@ int main(void)
   LOG_INFO("TEST");
   LOG_DEBUG("TEST");
   LOG_ERROR("TEST");
-  
+
+  led_init();
+  dpot_init();
+  kbus_init();
+  adc_init();
+    
   while (1)
   {
     __WFI();

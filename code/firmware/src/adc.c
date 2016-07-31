@@ -8,7 +8,7 @@
 /* ADC parameters */
 #define ADCCONVERTEDVALUES_BUFFER_SIZE ((uint32_t)  1)    /* Size of array containing ADC converted values */
 
-
+/* TIMER3 parameters */
 #define TIMER_FREQUENCY                ((uint32_t)   10)    /* Timer frequency (unit: Hz). With a timer 16 bits and time base freq min 1Hz, range is min=1Hz, max=32kHz. */
 #define TIMER_FREQUENCY_RANGE_MIN      ((uint32_t)    1)    /* Timer minimum frequency (unit: Hz), used to calculate frequency range. With a timer 16 bits, maximum frequency will be 32000 times this value. */
 #define TIMER_PRESCALER_MAX_VALUE      (0xFFFF-1)           /* Timer prescaler maximum value (0xFFFF for a timer 16 bits) */
@@ -16,10 +16,10 @@
 /*---- Static variable -----------------------------------------------*/
 
 /* ADC handler declaration */
-ADC_HandleTypeDef hadc;
+ADC_HandleTypeDef adch;
 
 /* TIM handler declaration */
-TIM_HandleTypeDef    TimHandle;
+TIM_HandleTypeDef    timh;
 
 /* Variable containing ADC conversions results */
 __IO uint16_t   adc_convert_value_buff[ADCCONVERTEDVALUES_BUFFER_SIZE];
@@ -45,23 +45,23 @@ static void adc_hw_init(void)
   ADC_ChannelConfTypeDef sConfig;
   ADC_AnalogWDGConfTypeDef AnalogWDGConfig;
 
-  hadc.Instance = ADC1;
-  hadc.Init.ClockPrescaler        = ADC_CLOCK_ASYNC_DIV1;
-  hadc.Init.Resolution            = ADC_RESOLUTION_12B;
-  hadc.Init.DataAlign             = ADC_DATAALIGN_RIGHT;
-  hadc.Init.ScanConvMode          = ADC_SCAN_DIRECTION_FORWARD;    /* Sequencer will convert the number of channels configured below, successively from the lowest to the highest channel number */
-  hadc.Init.EOCSelection          = ADC_EOC_SINGLE_CONV;
-  hadc.Init.LowPowerAutoWait      = DISABLE;
-  hadc.Init.LowPowerAutoPowerOff  = DISABLE;
-  hadc.Init.ContinuousConvMode    = DISABLE;                        /* Continuous mode to have maximum conversion speed (no delay between conversions) */
-  hadc.Init.DiscontinuousConvMode = DISABLE;                       /* Parameter discarded because sequencer is disabled */
-  hadc.Init.ExternalTrigConv      = ADC_EXTERNALTRIGCONV_T3_TRGO;  /* Trig of conversion start done by external event */
-  hadc.Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_RISING;
-  hadc.Init.DMAContinuousRequests = ENABLE;                        /* ADC-DMA continuous requests to match with DMA configured in circular mode */
-  hadc.Init.Overrun               = ADC_OVR_DATA_OVERWRITTEN;
-  hadc.Init.SamplingTimeCommon    = ADC_SAMPLETIME_41CYCLES_5;
+  adch.Instance = ADC1;
+  adch.Init.ClockPrescaler        = ADC_CLOCK_ASYNC_DIV1;
+  adch.Init.Resolution            = ADC_RESOLUTION_12B;
+  adch.Init.DataAlign             = ADC_DATAALIGN_RIGHT;
+  adch.Init.ScanConvMode          = ADC_SCAN_DIRECTION_FORWARD;    /* Sequencer will convert the number of channels configured below, successively from the lowest to the highest channel number */
+  adch.Init.EOCSelection          = ADC_EOC_SINGLE_CONV;
+  adch.Init.LowPowerAutoWait      = DISABLE;
+  adch.Init.LowPowerAutoPowerOff  = DISABLE;
+  adch.Init.ContinuousConvMode    = DISABLE;                        /* Continuous mode to have maximum conversion speed (no delay between conversions) */
+  adch.Init.DiscontinuousConvMode = DISABLE;                       /* Parameter discarded because sequencer is disabled */
+  adch.Init.ExternalTrigConv      = ADC_EXTERNALTRIGCONV_T3_TRGO;  /* Trig of conversion start done by external event */
+  adch.Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_RISING;
+  adch.Init.DMAContinuousRequests = ENABLE;                        /* ADC-DMA continuous requests to match with DMA configured in circular mode */
+  adch.Init.Overrun               = ADC_OVR_DATA_OVERWRITTEN;
+  adch.Init.SamplingTimeCommon    = ADC_SAMPLETIME_41CYCLES_5;
 
-  if (HAL_ADC_Init(&hadc) != HAL_OK)
+  if (HAL_ADC_Init(&adch) != HAL_OK)
   {
     LOG_ERROR("ADC INIT != HAL_OK");
   }
@@ -70,7 +70,7 @@ static void adc_hw_init(void)
   sConfig.Channel = ADC_CHANNEL_1;
   sConfig.Rank = ADC_RANK_CHANNEL_NUMBER;
 
-  if (HAL_ADC_ConfigChannel(&hadc, &sConfig) != HAL_OK)
+  if (HAL_ADC_ConfigChannel(&adch, &sConfig) != HAL_OK)
   {
     LOG_ERROR("ADC_CONFIG_CHANNEL != HAL_OK");
   }
@@ -87,21 +87,21 @@ static void adc_hw_init(void)
   AnalogWDGConfig.HighThreshold = (RANGE_12BITS * 1/8);
   AnalogWDGConfig.LowThreshold = (0);
 
-  if (HAL_ADC_AnalogWDGConfig(&hadc, &AnalogWDGConfig) != HAL_OK)
+  if (HAL_ADC_AnalogWDGConfig(&adch, &AnalogWDGConfig) != HAL_OK)
   {
     /* Channel Configuration Error */
      LOG_ERROR("HAL_ADC_AnalogWDGConfig != HAL_OK");
   }
 
     /* Run the ADC calibration */
-  if (HAL_ADCEx_Calibration_Start(&hadc) != HAL_OK)
+  if (HAL_ADCEx_Calibration_Start(&adch) != HAL_OK)
   {
     /* Calibration Error */
     LOG_ERROR("HAL_ADCEx_Calibration_Start != HAL_OK");
   }
 
     /* Start ADC conversion on regular group with transfer by DMA */
-  if (HAL_ADC_Start_DMA(&hadc,
+  if (HAL_ADC_Start_DMA(&adch,
                         (uint32_t *)adc_convert_value_buff,
                         ADCCONVERTEDVALUES_BUFFER_SIZE
                        ) != HAL_OK)
@@ -154,16 +154,16 @@ void adc_tim_config(void)
   timer_prescaler = (timer_clock_frequency / (TIMER_PRESCALER_MAX_VALUE * TIMER_FREQUENCY_RANGE_MIN)) +1;
   
   /* Set timer instance */
-  TimHandle.Instance = TIM3;
+  timh.Instance = TIM3;
   
   /* Configure timer parameters */
-  TimHandle.Init.Period            = ((timer_clock_frequency / (timer_prescaler * TIMER_FREQUENCY)) - 1);
-  TimHandle.Init.Prescaler         = (timer_prescaler - 1);
-  TimHandle.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
-  TimHandle.Init.CounterMode       = TIM_COUNTERMODE_UP;
-  TimHandle.Init.RepetitionCounter = 0x0;
+  timh.Init.Period            = ((timer_clock_frequency / (timer_prescaler * TIMER_FREQUENCY)) - 1);
+  timh.Init.Prescaler         = (timer_prescaler - 1);
+  timh.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
+  timh.Init.CounterMode       = TIM_COUNTERMODE_UP;
+  timh.Init.RepetitionCounter = 0x0;
   
-  if (HAL_TIM_Base_Init(&TimHandle) != HAL_OK)
+  if (HAL_TIM_Base_Init(&timh) != HAL_OK)
   {
     /* Timer initialization Error */
     LOG_ERROR("HAL_TIM_Base_Init != HAL_OK");
@@ -173,14 +173,14 @@ void adc_tim_config(void)
   master_timer_config.MasterOutputTrigger = TIM_TRGO_UPDATE;
   master_timer_config.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
 
-  if (HAL_TIMEx_MasterConfigSynchronization(&TimHandle, &master_timer_config) != HAL_OK)
+  if (HAL_TIMEx_MasterConfigSynchronization(&timh, &master_timer_config) != HAL_OK)
   {
     /* Timer TRGO selection Error */
     LOG_ERROR("HAL_TIMEx_MasterConfigSynchronization != HAL_OK");
   }
 
   /* Timer enable */
-  if (HAL_TIM_Base_Start(&TimHandle) != HAL_OK)
+  if (HAL_TIM_Base_Start(&timh) != HAL_OK)
   {
     /* Counter Enable Error */
     LOG_ERROR("HAL_TIM_Base_Start != HAL_OK");
@@ -191,32 +191,32 @@ void adc_tim_config(void)
 
 /**
   * @brief  Conversion complete callback in non blocking mode
-  * @param  hadc : ADC handle
+  * @param  adch : ADC handle
   * @note   This example shows a simple way to report end of conversion
   *         and get conversion result. You can add your own implementation.
   * @retval None
   */
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *adch)
 {
   //LOG_DEBUG("ADC_CcplC");
 }
 
 /**
   * @brief  Conversion DMA half-transfer callback in non blocking mode 
-  * @param  hadc: ADC handle
+  * @param  adch: ADC handle
   * @retval None
   */
-void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
+void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* adch)
 {
   //LOG_DEBUG("ADC_ChplC");
 }
 
 /**
   * @brief  Analog watchdog callback in non blocking mode. 
-  * @param  hadc: ADC handle
+  * @param  adch: ADC handle
   * @retval None
   */
-  void HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef* hadc)
+  void HAL_ADC_LevelOutOfWindowCallback(ADC_HandleTypeDef* adch)
 {
   /* Set variable to report analog watchdog out of window status to main      */
   /* program.                                                                 */
@@ -227,10 +227,10 @@ void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc)
 /**
   * @brief  ADC error callback in non blocking mode
   *        (ADC conversion with interruption or transfer by DMA)
-  * @param  hadc: ADC handle
+  * @param  adch: ADC handle
   * @retval None
   */
-void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
+void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *adch)
 {
   /* In case of ADC error, call main error handler */
   LOG_ERROR("HAL_ADC_ErrorCallback");
@@ -246,7 +246,7 @@ void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc)
   */
 void ADC1_IRQHandler(void)
 {
-  HAL_ADC_IRQHandler(&hadc);
+  HAL_ADC_IRQHandler(&adch);
 }
 
 /**
@@ -256,5 +256,5 @@ void ADC1_IRQHandler(void)
 */
 void DMA1_Channel1_IRQHandler(void)
 {
-  HAL_DMA_IRQHandler(hadc.DMA_Handle);
+  HAL_DMA_IRQHandler(adch.DMA_Handle);
 }
