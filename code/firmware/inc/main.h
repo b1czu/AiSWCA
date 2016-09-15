@@ -13,6 +13,7 @@
 #include "device_cfg.h"
 #include "firmware_cfg.h"
 #include "error.h"
+#include "radio_cfg.h"
 
 #include "cli.h"
 #include "kbus.h"
