@@ -14671,8 +14671,8 @@ B340A  3A 40V SMA &lt;br&gt;</description>
 </classes>
 <parts>
 <part name="STM1" library="stm32f030f4" deviceset="STM32F030F4P6" device="V1" value="STM32F070F6P6"/>
-<part name="R4" library="rcl" deviceset="R-EU_" device="R0805"/>
-<part name="R3" library="rcl" deviceset="R-EU_" device="R0805"/>
+<part name="R4" library="rcl" deviceset="R-EU_" device="R0805" value="10k"/>
+<part name="R3" library="rcl" deviceset="R-EU_" device="R0805" value="100k"/>
 <part name="GND4" library="supply1" deviceset="GND" device=""/>
 <part name="GND6" library="supply1" deviceset="GND" device=""/>
 <part name="C3" library="rcl" deviceset="C-EU" device="C0805"/>
@@ -14683,8 +14683,8 @@ B340A  3A 40V SMA &lt;br&gt;</description>
 <part name="GND3" library="supply1" deviceset="GND" device=""/>
 <part name="JP3" library="pinhead" deviceset="PINHD-1X2" device="/90" value="PWR"/>
 <part name="IC1" library="lm1117" deviceset="LM1117IMPX-*" device="" technology="3.3"/>
-<part name="C1" library="rcl" deviceset="C-EU" device="C0805"/>
-<part name="C2" library="rcl" deviceset="C-EU" device="C0805"/>
+<part name="C1" library="rcl" deviceset="C-EU" device="C0805" value="10u"/>
+<part name="C2" library="rcl" deviceset="C-EU" device="C0805" value="100u"/>
 <part name="GND5" library="supply1" deviceset="GND" device=""/>
 <part name="SUPPLY5" library="supply2" deviceset="VCC" device=""/>
 <part name="SUPPLY3" library="supply2" deviceset="VCC" device=""/>

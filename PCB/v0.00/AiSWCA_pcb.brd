@@ -9,16 +9,16 @@
 <grid distance="0.0125" unitdist="inch" unit="mm" style="lines" multiple="1" display="no" altdistance="0.025" altunitdist="inch" altunit="mm"/>
 <layers>
 <layer number="1" name="Top" color="4" fill="1" visible="no" active="yes"/>
-<layer number="16" name="Bottom" color="1" fill="1" visible="no" active="yes"/>
-<layer number="17" name="Pads" color="2" fill="1" visible="no" active="yes"/>
-<layer number="18" name="Vias" color="2" fill="1" visible="no" active="yes"/>
+<layer number="16" name="Bottom" color="1" fill="1" visible="yes" active="yes"/>
+<layer number="17" name="Pads" color="2" fill="1" visible="yes" active="yes"/>
+<layer number="18" name="Vias" color="2" fill="1" visible="yes" active="yes"/>
 <layer number="19" name="Unrouted" color="6" fill="1" visible="no" active="yes"/>
-<layer number="20" name="Dimension" color="15" fill="1" visible="no" active="yes"/>
+<layer number="20" name="Dimension" color="15" fill="1" visible="yes" active="yes"/>
 <layer number="21" name="tPlace" color="7" fill="1" visible="no" active="yes"/>
-<layer number="22" name="bPlace" color="7" fill="1" visible="no" active="yes"/>
+<layer number="22" name="bPlace" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="23" name="tOrigins" color="15" fill="1" visible="no" active="yes"/>
-<layer number="24" name="bOrigins" color="15" fill="1" visible="no" active="yes"/>
-<layer number="25" name="tNames" color="7" fill="1" visible="yes" active="yes"/>
+<layer number="24" name="bOrigins" color="15" fill="1" visible="yes" active="yes"/>
+<layer number="25" name="tNames" color="7" fill="1" visible="no" active="yes"/>
 <layer number="26" name="bNames" color="7" fill="1" visible="yes" active="yes"/>
 <layer number="27" name="tValues" color="7" fill="1" visible="no" active="yes"/>
 <layer number="28" name="bValues" color="7" fill="1" visible="no" active="yes"/>
@@ -1717,16 +1717,16 @@ design rules under a new name.</description>
 </autorouter>
 <elements>
 <element name="STM1" library="stm32f030f4" package="TSSOP20" value="STM32F070F6P6" x="13.97" y="25.4" rot="R270"/>
-<element name="R4" library="rcl" package="R0805" value="" x="5.715" y="27.305" rot="R270"/>
-<element name="R3" library="rcl" package="R0805" value="" x="7.8105" y="18.8595" rot="R180"/>
+<element name="R4" library="rcl" package="R0805" value="10k" x="5.715" y="27.305" rot="R270"/>
+<element name="R3" library="rcl" package="R0805" value="100k" x="7.8105" y="18.8595" rot="R180"/>
 <element name="C3" library="rcl" package="C0805" value="" x="6.5405" y="33.3375" rot="MR0"/>
 <element name="C4" library="rcl" package="C0805" value="" x="15.5575" y="36.195" rot="MR180"/>
 <element name="C5" library="rcl" package="C0805" value="" x="6.35" y="36.83" rot="MR0"/>
 <element name="C6" library="rcl" package="B/3528-21W" value="" x="16.1925" y="33.3375" rot="MR0"/>
 <element name="JP3" library="pinhead" package="1X02/90" value="PWR" x="8.255" y="46.99"/>
 <element name="IC1" library="lm1117" package="SOT223" value="LM1117IMPX-3.3" x="11.1125" y="34.6075" rot="R180"/>
-<element name="C1" library="rcl" package="C0805" value="" x="5.715" y="34.6075" rot="R270"/>
-<element name="C2" library="rcl" package="C0805" value="" x="15.5575" y="38.735" rot="MR180"/>
+<element name="C1" library="rcl" package="C0805" value="10u" x="5.715" y="34.6075" rot="R270"/>
+<element name="C2" library="rcl" package="C0805" value="100u" x="15.5575" y="38.735" rot="MR180"/>
 <element name="SV2" library="con-lstb" package="MA03-1" value="Debug" x="15.5575" y="13.97" rot="R180">
 <attribute name="OC_NEWARK" value="unknown" x="15.5575" y="13.97" size="1.778" layer="27" rot="R180" display="off"/>
 <attribute name="MF" value="" x="15.5575" y="13.97" size="1.778" layer="27" rot="R180" display="off"/>
