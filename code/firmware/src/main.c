@@ -79,6 +79,7 @@ int main(void)
   while (1)
   {
     adc_logic();
+    kbus_logic();
     __WFI();
   }
 }

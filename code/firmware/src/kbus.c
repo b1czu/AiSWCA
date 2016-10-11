@@ -6,125 +6,244 @@
 /*---- Static variable ------------------------------------------------*/
 
 static UART_HandleTypeDef huart1;
-static KBUS_HandleTypeDef hkbus;
+static KBUS_Handle_t hkbus;
 
 /*---- Static function declaration ------------------------------------*/
-static void kbus_frame_pos_reset(KBUS_HandleTypeDef* hkbus);
-static void kbus_frame_byte_receive(KBUS_HandleTypeDef* hkbus, uint8_t* data);
-static void kbus_frame_handler(KBUS_HandleTypeDef* hkbus);
-static void kbus_handle_init(KBUS_HandleTypeDef* hkbus);
+static void kbus_frame_byte_receive(KBUS_Handle_t* hkbus, uint8_t* data);
+static void kbus_frame_handler(KBUS_Handle_t* hkbus);
+static void kbus_handle_init(KBUS_Handle_t* hkbus);
 static void kbus_hw_init(void);
 
 /*---- Function definition --------------------------------------------*/
-static void kbus_frame_pos_reset(KBUS_HandleTypeDef* hkbus)
+/*This initializes the FIFO structure with the given buffer and size*/
+static int8_t kbus_buffer_init(KBUS_BUFFER_t * f, uint8_t * buf, uint16_t size)
 {
-	/* Reset KBUS frame position to 0 */
-	hkbus->framePos = 0;
-	/* Reset KBUS frame parser state to CHECK_SRC */
-	hkbus->state = CHECK_SRC;
+	f->head = 0;
+	f->tail = 0;
+	f->size = size;
+	f->buf = buf;
+
+	if (f->buf == memset(buf, 0, size))
+		return KBUS_BUFFER_OK;
+	else
+		return KBUS_BUFFER_MEM_ERROR;
 }
 
-static void kbus_frame_byte_receive(KBUS_HandleTypeDef* hkbus, uint8_t* data)
+/*This reads nbytes bytes from the FIFO
+ The number of bytes read is returned*/
+static uint16_t kbus_buffer_read(KBUS_BUFFER_t * f, uint8_t * buf,
+		uint16_t nbytes)
 {
-	/* Check if we got less or equal data bytes than KBUS_MAX_FRAME_SIZE in frame buffer */
-	if (hkbus->framePos < KBUS_MAX_FRAME_SIZE)
+	uint16_t i;
+	uint8_t * p;
+	p = buf;
+	for (i = 0; i < nbytes; i++)
 	{
-		/* Insert new data into buffer and increment framePos */
-		hkbus->frame[hkbus->framePos++] = *data;
+		if (f->tail != f->head)
+		{ //see if any data is available
+			if (p != NULL)
+				*p++ = f->buf[f->tail];  //grab a byte from the buffer
+			f->tail++;  //increment the tail
+			if (f->tail == f->size)
+			{  //check for wrap-around
+				f->tail = 0;
+			}
+		}
+		else
+		{
+			return i; //number of bytes read
+		}
+	}
+	return nbytes;
+}
+
+/*This writes up to nbytes bytes to the FIFO
+ If the head runs in to the tail, not all bytes are written
+ The number of bytes written is returned*/
+static uint16_t kbus_buffer_write(KBUS_BUFFER_t * f, const uint8_t * buf,
+		uint16_t nbytes)
+{
+	uint16_t i;
+	const uint8_t * p;
+	p = buf;
+	for (i = 0; i < nbytes; i++)
+	{
+		//first check to see if there is space in the buffer
+		if ((f->head + 1 == f->tail)
+				|| ((f->head + 1 == f->size) && (f->tail == 0)))
+		{
+			return i; //no more room
+		}
+		else
+		{
+			f->buf[f->head] = *p++;
+			f->head++;  //increment the head
+			if (f->head == f->size)
+			{  //check for wrap-around
+				f->head = 0;
+			}
+		}
+	}
+	return nbytes;
+}
+
+/*Return actual amount of elements in buffer*/
+static uint16_t kbus_buffer_get_elements_amount(KBUS_BUFFER_t *fifo)
+{
+	int16_t ret;
+	ret = fifo->head - fifo->tail;
+	if (ret < 0)
+		ret += fifo->size;
+	return ret;
+}
+
+/*Retrieves, but does not remove, return 0 if fifo is empty
+ or if fifo contains not enough data*/
+static uint16_t kbus_buffer_peek(KBUS_BUFFER_t * f, uint8_t* buf,
+		uint16_t position)
+{
+	if (position < kbus_buffer_get_elements_amount(f))
+	{
+		*buf = f->buf[(f->tail + position) % f->size]; //grab a byte from the buffer
+		//LOG_DEBUG("\nDEBUG_kbus_buffer_peek: 0x%02X\n",*buf);
+		return 1;
 	}
 	else
-	{
-		/* This shouldn't ever happen! Sth went wrong */
-		LOG_ERROR("%s %d","KBUS_HandleTypeDef->framePos exceeded KBUS_MAX_FRAME_SIZE=",(int)KBUS_MAX_FRAME_SIZE );
-	}
+		return 0;
 }
 
-static void kbus_frame_handler(KBUS_HandleTypeDef* hkbus)
+static void kbus_frame_byte_receive(KBUS_Handle_t* hkbus, uint8_t* data)
 {
-	switch(hkbus->state)
+	/* Insert new data into buffer */
+	kbus_buffer_write(&hkbus->kFifo, data, sizeof(uint8_t));
+}
+
+static void kbus_frame_handler(KBUS_Handle_t* hkbus)
+{
+	uint8_t frameSrc = 0;
+	uint8_t frameSize = 0;
+	switch (hkbus->kState)
 	{
 	/* Nothing done yet, let's check first byte */
 	case CHECK_SRC:
 		/* Check if got first (SRC) byte in the KBUS frame buffer */
-		if (hkbus->framePos >= 1)
+		if (kbus_buffer_get_elements_amount(&hkbus->kFifo) >= 1)
 		{
 			/* At this stage SRC byte is received and stored in KBUS frame buffer,
-			 * Can't do more at this time so let's break and wait for next byte.
+			 * Let's check source address and if it is something that we are interested in
 			 */
-			hkbus->state = CHECK_LEN;
+			if (kbus_buffer_peek(&hkbus->kFifo, &frameSrc, 0) == 0)
+			{
+				//no data in buff ?? shouldnt happen after earlier checks
+				break;
+			}
+			if (frameSrc != KBUS_ADDR_MFL)//we are only interested in data from MFL
+			{
+				LOG_DEBUG("%s", "SRC addr is not MFL! Removing one position from FIFO...");
+				kbus_buffer_read(&hkbus->kFifo, NULL, 1);//Wrong source address, removing one byte from buffer.
+				break;
+			}
+			hkbus->kState = CHECK_LEN;
+			//LOG_DEBUG("%s", "kbus->kState = CHECK_LEN;");
 		}
 		/* Can't do more at this stage, let's wait for next byte */
-		break;
+		//break;
 	case CHECK_LEN:
 		/* Check if got second (LENGTH) byte in the KBUS frame buffer */
-		if (hkbus->framePos >= 2)
+		if (kbus_buffer_get_elements_amount(&hkbus->kFifo) >= 2)
 		{
+
+			if (kbus_buffer_peek(&hkbus->kFifo, &frameSize, 1) == 0)
+			{
+				hkbus->kState = CHECK_SRC;
+				break;
+			}
 			/* Check if LENGTH byte is in (3 - 36) range (KBUS frame spec) */
-			if (hkbus->frame[1] >= KBUS_MIN_FRAME_LEN && hkbus->frame[1] <= KBUS_MAX_FRAME_LEN)
+			if (frameSize >= KBUS_MIN_FRAME_LEN
+					&& frameSize <= KBUS_MAX_FRAME_LEN)
 			{
 				/* At this stage correct LEN byte is received and stored in KBUS frame buffer,
 				 * Can't do more at this time so let's break and wait for next byte. */
-				hkbus->state = CHECK_CRC;
+				hkbus->kState = CHECK_CRC;
+				LOG_DEBUG("Good LENGTH byte! (%d bytes)", frameSize);
 			}
 			else
 			{
-				/* Invalid LENGTH byte received. Let's start over. */
-				kbus_frame_pos_reset(hkbus);
+				/* Invalid LENGTH byte received. Let's move by one byte and start over. */
+				LOG_DEBUG("%s", "Invalid LENGTH byte! Removing one position from FIFO...");
+				kbus_buffer_read(&hkbus->kFifo, NULL, 1);
+				hkbus->kState = CHECK_SRC;
+				break;
 			}
 		}
 		/* Can't do more at this stage, let's wait for next byte */
-		break;
+		//break;
 	case CHECK_CRC:
 		/* Check if got LENGTH bytes (counted without SRC byte and LEN byte) in the KBUS frame buffer.
 		 * If yes, count checksum and check it against checksum received in KBUS frame.
 		 * If no, just wait for next byte.
-		 * LENGTH is stored in KBUS buffer at frame[1].
+		 * LENGTH is stored in KBUS buffer at offset[1].
 		 */
-		if (hkbus->framePos >= hkbus->frame[1] + 2)
+		kbus_buffer_peek(&hkbus->kFifo, &frameSize, 1);
+		if (kbus_buffer_get_elements_amount(&hkbus->kFifo) >= frameSize + 2)
 		{
-			uint8_t crc = 0;
-			/* Take all bytes without last one (CRC) and count checksum (KBUS frame spec)*/
-			for (int i = 0; i <= hkbus->frame[1]; i++)
+			uint8_t countedCRC = 0;
+			uint8_t frameCRC = 0;
+			uint8_t byte = 0;
+
+			/* Take all bytes without last one (CRC) and count checksum (as told in KBUS frame specs)*/
+			for (int i = 0; i <= frameSize; i++)
 			{
-				crc ^= hkbus->frame[i];
+				kbus_buffer_peek(&hkbus->kFifo, &byte, i);
+				countedCRC ^= byte;
 			}
 			/* Check if counted checksum match received KBUS frame checksum (which is stored at last byte)*/
-			if (hkbus->frame[hkbus->frame[1] + 1] == crc) //xD
+			kbus_buffer_peek(&hkbus->kFifo, &frameCRC, frameSize + 1);
+			if (frameCRC == countedCRC)
 			{
-				/* YAY! we got good frame ;) Let's add it to known good frame fifo and reset KBUS frame buffer*/
+				uint8_t frame[KBUS_MAX_FRAME_SIZE];
+				/* YAY! we got good frame ;) */
 				//TODO add to fifo (maybe pointer to a function stored in hkbus struct that will point to function to execute with received frame as arg?)
-
-
+				// NOPE!!!!!!
+				//TODO add parser of known frames (maybe struct with pointers to functions telling what to do when sth happens?)
+				/* Good frame received let's start over */
 				LOG_DEBUG("%s","[KBUS] Frame with good CRC received.");
-				/* Good frame received and pushed to FIFO, let's start over */
-				kbus_frame_pos_reset(hkbus);
+				kbus_buffer_read(&hkbus->kFifo, &frame[0], frameSize + 2);
+				hkbus->kState = CHECK_SRC;
 			}
 			else
 			{
+				/* Wrong checksum, let's move by one byte and start over */
 				LOG_DEBUG("%s","[KBUS] Frame with BAD CRC received and dropped.");
-				/* Wrong checksum, let's start over */
-				kbus_frame_pos_reset(hkbus);
+				kbus_buffer_read(&hkbus->kFifo, NULL, 1);
+				hkbus->kState = CHECK_SRC;
 			}
+		}
+		else
+		{
+			//LOG_DEBUG("Wait for more data (Have %d need %d)", (int)kbus_buffer_get_elements_amount(&hkbus->kFifo), frameSize + 2 );
 		}
 		/* Can't do more at this stage, let's wait for next byte */
 		break;
 	}
 }
 
-static void kbus_handle_init(KBUS_HandleTypeDef* hkbus)
+static void kbus_handle_init(KBUS_Handle_t* hkbus)
 {
-	hkbus->framePos = 0;
-	hkbus->state = CHECK_SRC;
+	hkbus->kState = CHECK_SRC;
+	kbus_buffer_init(&hkbus->kFifo, hkbus->kBuffer, sizeof(hkbus->kBuffer));
 }
 
 static void kbus_hw_init(void)
 {
 	GPIO_InitTypeDef GPIO_InitStruct;
 
-	__HAL_RCC_USART1_CLK_ENABLE();
-	__HAL_RCC_GPIOA_CLK_ENABLE();
+	__HAL_RCC_USART1_CLK_ENABLE()
+	;
+	__HAL_RCC_GPIOA_CLK_ENABLE()
+	;
 
-	GPIO_InitStruct.Pin = GPIO_PIN_9|GPIO_PIN_10;
+	GPIO_InitStruct.Pin = GPIO_PIN_9 | GPIO_PIN_10;
 	GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
 	GPIO_InitStruct.Pull = GPIO_PULLUP;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
@@ -133,9 +252,9 @@ static void kbus_hw_init(void)
 
 	huart1.Instance = USART1;
 	huart1.Init.BaudRate = 9600;
-	huart1.Init.WordLength = UART_WORDLENGTH_8B;
+	huart1.Init.WordLength = UART_WORDLENGTH_9B;
 	huart1.Init.StopBits = UART_STOPBITS_1;
-	huart1.Init.Parity = UART_PARITY_NONE;
+	huart1.Init.Parity = UART_PARITY_EVEN;
 	huart1.Init.Mode = UART_MODE_TX_RX;
 	huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
 	huart1.Init.OverSampling = UART_OVERSAMPLING_16;
@@ -143,15 +262,15 @@ static void kbus_hw_init(void)
 	huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
 	if (HAL_UART_Init(&huart1) != HAL_OK)
 	{
-	#warning TO DISCUSS
-	err_handler(__FILE__,__LINE__,"BUG INFO");
+#warning TO DISCUSS
+		err_handler(__FILE__, __LINE__, "BUG INFO");
 	}
 
-	HAL_NVIC_EnableIRQ(USART1_IRQn);
-
-	__HAL_UART_ENABLE_IT(&huart1, UART_IT_PE);   // Enable the UART Parity Error Interrupt
-	__HAL_UART_ENABLE_IT(&huart1, UART_IT_ERR);  // Enable the UART Error Interrupt: (Frame error, noise error, overrun error)
+	__HAL_UART_ENABLE_IT(&huart1, UART_IT_PE); // Enable the UART Parity Error Interrupt
+	__HAL_UART_ENABLE_IT(&huart1, UART_IT_ERR); // Enable the UART Error Interrupt: (Frame error, noise error, overrun error)
 	__HAL_UART_ENABLE_IT(&huart1, UART_IT_RXNE); // Enable the UART Data Register not empty Interrupt
+
+	HAL_NVIC_EnableIRQ(USART1_IRQn);
 }
 
 /* KBUS init function */
@@ -159,30 +278,77 @@ void kbus_init(void)
 {
 	kbus_hw_init();
 	kbus_handle_init(&hkbus);
+	LOG_INFO("KBUS support initialized");
+}
+
+void kbus_logic(void)
+{
+	kbus_frame_handler(&hkbus);
 }
 
 /*---- IRQ ------------------------------------------------------------*/
 
 void USART1_IRQHandler(void)
 {
-  uint8_t rxData;
-  uint32_t irq_Status = USART1->ISR;
-  if(irq_Status&0x0F)
-  {
-    #warning ADD ERROR CODE
-  }
-  else
-  {
-    if(irq_Status & UART_FLAG_RXNE)
-    {                  
-      rxData = (uint8_t) USART1->RDR;
-      kbus_frame_byte_receive(&hkbus, &rxData);
-      kbus_frame_handler(&hkbus);
+	/* UART parity error interrupt occurred -------------------------------------*/
+	if ((__HAL_UART_GET_IT(&huart1, UART_IT_PE) != RESET)
+			&& (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_PE) != RESET))
+	{
+		__HAL_UART_CLEAR_PEFLAG(&huart1);
 
-    }
-    else if(irq_Status & UART_FLAG_TXE)
-    {
+		LOG_ERROR("UART PARITY ERROR\n");
+	}
 
-    }
-  } 
+	/* UART frame error interrupt occurred --------------------------------------*/
+	if ((__HAL_UART_GET_IT(&huart1, UART_IT_FE) != RESET)
+			&& (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_ERR) != RESET))
+	{
+		__HAL_UART_CLEAR_FEFLAG(&huart1);
+
+		LOG_ERROR("UART FRAME ERROR\n");
+	}
+
+	/* UART noise error interrupt occurred --------------------------------------*/
+	if ((__HAL_UART_GET_IT(&huart1, UART_IT_NE) != RESET)
+			&& (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_ERR) != RESET))
+	{
+		__HAL_UART_CLEAR_NEFLAG(&huart1);
+
+		LOG_ERROR("UART NOISE ERROR\n");
+	}
+
+	/* UART Over-Run interrupt occurred -----------------------------------------*/
+	if ((__HAL_UART_GET_IT(&huart1, UART_IT_ORE) != RESET)
+			&& (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_ERR) != RESET))
+	{
+		__HAL_UART_CLEAR_OREFLAG(&huart1);
+
+		LOG_ERROR("UART OVERRUN ERROR\n");
+	}
+
+	if ((__HAL_UART_GET_IT(&huart1, UART_IT_RXNE) != RESET)
+			&& (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_RXNE) != RESET))
+	{
+
+		/* we got a character */
+		uint8_t rxData = (uint8_t) (huart1.Instance->RDR & 0xff);
+		kbus_frame_byte_receive(&hkbus, &rxData);
+
+		/* Clear RXNE interrupt flag */
+		__HAL_UART_SEND_REQ(&huart1, UART_RXDATA_FLUSH_REQUEST);
+	}
+
+	/* UART in mode Transmitter ------------------------------------------------*/
+	if ((__HAL_UART_GET_IT(&huart1, UART_IT_TXE) != RESET)
+			&& (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_TXE) != RESET))
+	{
+		;
+	}
+
+	/* UART in mode Transmitter (transmission end) -----------------------------*/
+	if ((__HAL_UART_GET_IT(&huart1, UART_IT_TC) != RESET)
+			&& (__HAL_UART_GET_IT_SOURCE(&huart1, UART_IT_TC) != RESET))
+	{
+		;
+	}
 }
