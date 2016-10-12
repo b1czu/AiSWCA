@@ -55,7 +55,7 @@ void adc_init(void){
 	adc_tim_config();
 	adc_logic_init();
 	adc_hw_init();
-	LOG_INFO("KBUS support initialized");
+	LOG_INFO("ADC support initialized");
 }
 
 
