@@ -9,6 +9,8 @@
 #define KBUS_MAX_FRAME_LEN 36
 #define KBUS_MAX_FRAME_SIZE (KBUS_MAX_FRAME_LEN + 2)
 
+#define KBUS_ADDR_IKE 0x80	//IKE
+#define KBUS_ADDR_IMO 0x44	//IMO
 #define KBUS_ADDR_MFL 0x50	//MFL
 #define KBUS_ADDR_RAD 0x68	//RAD
 #define KBUS_ADDR_CDC 0x18	//CDC
@@ -96,7 +98,7 @@ static const uint8_t KBUS_MFL_SEND_END_PRESS[6]  =
 static const uint8_t KBUS_MFL_SEND_END_PRESS_LONG[6]  =
 {  0x50, 0x04, 0xC8, 0x3B, 0x90, 0x37 }; // Steering wheel send/end long press
 static const uint8_t KBUS_MFL_SEND_END_RELEASE[6]  =
-{  0x50, 0x04, 0xC8, 0x3B, 0x90, 0x37 }; // Steering wheel send/end release
+{  0x50, 0x04, 0xC8, 0x3B, 0xA0, 0x07 }; // Steering wheel send/end release
 static const uint8_t KBUS_MFL_RT_PRESS[5]  =
 {  0x50, 0x03, 0xC8, 0x01, 0x9A }; // MFL R/T press
 static const uint8_t KBUS_IGNITION_OFF[6]  =

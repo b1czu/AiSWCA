@@ -1,4 +1,5 @@
 #include <string.h>
+#include "firmware_cfg.h"
 #include "cli.h"
 #include "error.h"
 #include "kbus.h"
@@ -122,6 +123,61 @@ static void kbus_frame_byte_receive(KBUS_Handle_t* hkbus, uint8_t* data)
 	kbus_buffer_write(&hkbus->kFifo, data, sizeof(uint8_t));
 }
 
+static void kbus_frame_parser(uint8_t* frame_p, uint8_t frame_len )
+{
+	if(!memcmp(frame_p, KBUS_KEY_IN, frame_len + 2)){
+		LOG_INFO("KBUS_KEY_IN");
+	}
+	if(!memcmp(frame_p, KBUS_KEY_OUT, frame_len + 2)){
+		LOG_INFO("KBUS_KEY_OUT");
+	}
+	if(!memcmp(frame_p, KBUS_MFL_VOL_UP, frame_len + 2)){
+		LOG_INFO("KBUS_MFL_VOL_UP pressed");
+	}
+	if(!memcmp(frame_p, KBUS_MFL_VOL_DOWN, frame_len + 2)){
+		LOG_INFO("KBUS_MFL_VOL_DOWN pressed");
+	}
+	if(!memcmp(frame_p, KBUS_MFL_NEXT_PRESS, frame_len + 2)){
+		LOG_INFO("KBUS_MFL_NEXT_PRESS pressed");
+	}
+	if(!memcmp(frame_p, KBUS_MFL_NEXT_PRESS_LONG, frame_len + 2)){
+		LOG_INFO("KBUS_MFL_NEXT_PRESS_LONG pressed");
+	}
+	if(!memcmp(frame_p, KBUS_MFL_NEXT_RELEASE, frame_len + 2)){
+		LOG_INFO("KBUS_MFL_NEXT_RELEASE pressed");
+	}
+	if(!memcmp(frame_p, KBUS_MFL_PREVIOUS_PRESS, frame_len + 2)){
+		LOG_INFO("KBUS_MFL_PREVIOUS_PRESS pressed");
+	}
+	if(!memcmp(frame_p, KBUS_MFL_PREVIOUS_PRESS_LONG, frame_len + 2)){
+		LOG_INFO("KBUS_MFL_PREVIOUS_PRESS_LONG pressed");
+	}
+	if(!memcmp(frame_p, KBUS_MFL_PREVIOUS_RELEASE, frame_len + 2)){
+		LOG_INFO("KBUS_MFL_PREVIOUS_RELEASE pressed");
+	}
+	if(!memcmp(frame_p, KBUS_MFL_SEND_END_PRESS, frame_len + 2)){
+		LOG_INFO("KBUS_MFL_SEND_END_PRESS pressed");
+	}
+	if(!memcmp(frame_p, KBUS_MFL_SEND_END_PRESS_LONG, frame_len + 2)){
+		LOG_INFO("KBUS_MFL_SEND_END_PRESS_LONG pressed");
+	}
+	if(!memcmp(frame_p, KBUS_MFL_SEND_END_RELEASE, frame_len + 2)){
+		LOG_INFO("KBUS_MFL_SEND_END_RELEASE pressed");
+	}
+	if(!memcmp(frame_p, KBUS_MFL_RT_PRESS, frame_len + 2)){
+		LOG_INFO("KBUS_MFL_RT_PRESS pressed");
+	}
+	if(!memcmp(frame_p, KBUS_IGNITION_OFF, frame_len + 2)){
+		LOG_INFO("KBUS_IGNITION_OFF");
+	}
+	if(!memcmp(frame_p, KBUS_IGNITION_POS1, frame_len + 2)){
+		LOG_INFO("KBUS_IGNITION_POS1");
+	}
+	if(!memcmp(frame_p, KBUS_IGNITION_POS2, frame_len + 2)){
+		LOG_INFO("KBUS_IGNITION_POS2");
+	}
+}
+
 static void kbus_frame_handler(KBUS_Handle_t* hkbus)
 {
 	uint8_t frameSrc = 0;
@@ -141,17 +197,16 @@ static void kbus_frame_handler(KBUS_Handle_t* hkbus)
 				//no data in buff ?? shouldnt happen after earlier checks
 				break;
 			}
-			if (frameSrc != KBUS_ADDR_MFL)//we are only interested in data from MFL
+/*			if (frameSrc != KBUS_ADDR_MFL && frameSrc != KBUS_ADDR_IMO && frameSrc != KBUS_ADDR_IKE)//we are only interested in data from MFL, IMO or KMBI
 			{
-				LOG_DEBUG("%s", "SRC addr is not MFL! Removing one position from FIFO...");
+				//LOG_DEBUG("%s", "SRC addr is not MFL! Removing one position from FIFO...");
 				kbus_buffer_read(&hkbus->kFifo, NULL, 1);//Wrong source address, removing one byte from buffer.
 				break;
-			}
+			}*/
 			hkbus->kState = CHECK_LEN;
 			//LOG_DEBUG("%s", "kbus->kState = CHECK_LEN;");
 		}
 		/* Can't do more at this stage, let's wait for next byte */
-		//break;
 	case CHECK_LEN:
 		/* Check if got second (LENGTH) byte in the KBUS frame buffer */
 		if (kbus_buffer_get_elements_amount(&hkbus->kFifo) >= 2)
@@ -169,19 +224,18 @@ static void kbus_frame_handler(KBUS_Handle_t* hkbus)
 				/* At this stage correct LEN byte is received and stored in KBUS frame buffer,
 				 * Can't do more at this time so let's break and wait for next byte. */
 				hkbus->kState = CHECK_CRC;
-				LOG_DEBUG("Good LENGTH byte! (%d bytes)", frameSize);
+				//LOG_DEBUG("Good LENGTH byte! (%d bytes)", frameSize);
 			}
 			else
 			{
 				/* Invalid LENGTH byte received. Let's move by one byte and start over. */
-				LOG_DEBUG("%s", "Invalid LENGTH byte! Removing one position from FIFO...");
+				//LOG_DEBUG("%s", "Invalid LENGTH byte! Removing one position from FIFO...");
 				kbus_buffer_read(&hkbus->kFifo, NULL, 1);
 				hkbus->kState = CHECK_SRC;
 				break;
 			}
 		}
 		/* Can't do more at this stage, let's wait for next byte */
-		//break;
 	case CHECK_CRC:
 		/* Check if got LENGTH bytes (counted without SRC byte and LEN byte) in the KBUS frame buffer.
 		 * If yes, count checksum and check it against checksum received in KBUS frame.
@@ -210,15 +264,31 @@ static void kbus_frame_handler(KBUS_Handle_t* hkbus)
 				//TODO add to fifo (maybe pointer to a function stored in hkbus struct that will point to function to execute with received frame as arg?)
 				// NOPE!!!!!!
 				//TODO add parser of known frames (maybe struct with pointers to functions telling what to do when sth happens?)
-				/* Good frame received let's start over */
-				LOG_DEBUG("%s","[KBUS] Frame with good CRC received.");
+
+				/* take frame from buffer */
 				kbus_buffer_read(&hkbus->kFifo, &frame[0], frameSize + 2);
+
+				#if DEBUG_LOG
+				/* ugly print */
+				char frame_as_text[200];
+				char*  frame_as_text_p = frame_as_text;
+				for(int c = 0; c < frameSize + 2; c++)
+				{
+					if(frame[c] < 0x10)
+						frame_as_text_p += sprintf_(frame_as_text_p, "0");
+					frame_as_text_p += sprintf_(frame_as_text_p, "%x ", frame[c]);
+				}
+				LOG_DEBUG("%s %s","[KBUS] Frame with good CRC received.", frame_as_text);
+				#endif
+				/* send frame to parser function */
+				kbus_frame_parser(&frame[0], frameSize);
+				/* Good frame received and processed, let's start over */
 				hkbus->kState = CHECK_SRC;
 			}
 			else
 			{
 				/* Wrong checksum, let's move by one byte and start over */
-				LOG_DEBUG("%s","[KBUS] Frame with BAD CRC received and dropped.");
+				LOG_ERROR("%s","[KBUS] Frame with BAD CRC received and dropped.");
 				kbus_buffer_read(&hkbus->kFifo, NULL, 1);
 				hkbus->kState = CHECK_SRC;
 			}
