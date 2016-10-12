@@ -36,7 +36,7 @@ static void cli_hw_init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 9600;
+  huart2.Init.BaudRate = 115200;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -74,23 +74,68 @@ void cli_put_char(char ch)
 /*---- IRQ ------------------------------------------------------------*/
 
 void USART2_IRQHandler(void){
-  uint8_t rxData[1];
-  uint32_t irq_Status = USART2->ISR;
-  if(irq_Status&0x0F)
-  {
-    #warning ADD ERROR CODE
-  }
-  else
-  {
-    if(irq_Status & UART_FLAG_RXNE)       // read interrupt
-    {                  
-      rxData[0] = (uint8_t) USART2->RDR;
-      HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
-      HAL_UART_Transmit(&huart2,&rxData[0],sizeof(rxData),100);
-    }
-    else if(irq_Status & UART_FLAG_TXE)
-    {
+	/* UART parity error interrupt occurred -------------------------------------*/
+	if ((__HAL_UART_GET_IT(&huart2, UART_IT_PE) != RESET)
+			&& (__HAL_UART_GET_IT_SOURCE(&huart2, UART_IT_PE) != RESET))
+	{
+		__HAL_UART_CLEAR_PEFLAG(&huart2);
 
-    }
-  } 
+		LOG_ERROR("UART PARITY ERROR\n");
+	}
+
+	/* UART frame error interrupt occurred --------------------------------------*/
+	if ((__HAL_UART_GET_IT(&huart2, UART_IT_FE) != RESET)
+			&& (__HAL_UART_GET_IT_SOURCE(&huart2, UART_IT_ERR) != RESET))
+	{
+		__HAL_UART_CLEAR_FEFLAG(&huart2);
+
+		LOG_ERROR("UART FRAME ERROR\n");
+	}
+
+	/* UART noise error interrupt occurred --------------------------------------*/
+	if ((__HAL_UART_GET_IT(&huart2, UART_IT_NE) != RESET)
+			&& (__HAL_UART_GET_IT_SOURCE(&huart2, UART_IT_ERR) != RESET))
+	{
+		__HAL_UART_CLEAR_NEFLAG(&huart2);
+
+		LOG_ERROR("UART NOISE ERROR\n");
+	}
+
+	/* UART Over-Run interrupt occurred -----------------------------------------*/
+	if ((__HAL_UART_GET_IT(&huart2, UART_IT_ORE) != RESET)
+			&& (__HAL_UART_GET_IT_SOURCE(&huart2, UART_IT_ERR) != RESET))
+	{
+		__HAL_UART_CLEAR_OREFLAG(&huart2);
+
+		LOG_ERROR("UART OVERRUN ERROR\n");
+	}
+
+	if ((__HAL_UART_GET_IT(&huart2, UART_IT_RXNE) != RESET)
+			&& (__HAL_UART_GET_IT_SOURCE(&huart2, UART_IT_RXNE) != RESET))
+	{
+
+		/* we got a character */
+		uint8_t rxData = (uint8_t) (huart2.Instance->RDR & 0xff);
+		/* toggle debug led */
+		HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
+		/* echo data back to same UART */
+		HAL_UART_Transmit(&huart2,&rxData,sizeof(rxData),100);;
+
+		/* Clear RXNE interrupt flag */
+		__HAL_UART_SEND_REQ(&huart2, UART_RXDATA_FLUSH_REQUEST);
+	}
+
+	/* UART in mode Transmitter ------------------------------------------------*/
+	if ((__HAL_UART_GET_IT(&huart2, UART_IT_TXE) != RESET)
+			&& (__HAL_UART_GET_IT_SOURCE(&huart2, UART_IT_TXE) != RESET))
+	{
+		;
+	}
+
+	/* UART in mode Transmitter (transmission end) -----------------------------*/
+	if ((__HAL_UART_GET_IT(&huart2, UART_IT_TC) != RESET)
+			&& (__HAL_UART_GET_IT_SOURCE(&huart2, UART_IT_TC) != RESET))
+	{
+		;
+	}
 }
