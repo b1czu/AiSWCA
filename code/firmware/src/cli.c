@@ -1,5 +1,7 @@
 #include "cli.h"
-#include "main.h"
+#include "error.h"
+#include "stm32f070x6.h"
+#include "stm32f0xx_hal.h"
 
 /*---- Define function -----------------------------------------------*/
 
@@ -66,7 +68,7 @@ static void cli_logic_init(void)
 
 void cli_put_char(char ch)
 {
-	char temp[1];
+	unsigned char temp[1];
 	temp[0] = ch;
 	HAL_UART_Transmit(&huart2,&temp[0],sizeof(temp),100);
 }

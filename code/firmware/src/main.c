@@ -1,4 +1,20 @@
-#include "main.h"
+#include <stdint.h>
+#include "stm32f070x6.h"
+#include "stm32f0xx_hal.h"
+#include "device_cfg.h"
+#include "firmware_cfg.h"
+#include "cli.h"
+#include "error.h"
+#include "sys.h"
+#include "adc.h"
+#include "dpot.h"
+#include "led.h"
+#include "kbus.h"
+#include "radio_cfg.h"
+
+
+
+
 
 /*---- Define function -----------------------------------------------*/
 
@@ -66,7 +82,6 @@ int main(void)
 
   sys_print_info();
 
-  #warning OUT
   LOG_INFO("TEST");
   LOG_DEBUG("TEST");
   LOG_ERROR("TEST");

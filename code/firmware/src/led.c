@@ -1,4 +1,7 @@
+#include "cli.h"
 #include "led.h"
+#include "stm32f070x6.h"
+#include "stm32f0xx_hal.h"
 
 /*---- Define function -----------------------------------------------*/
 
@@ -14,8 +17,10 @@ static void led_logic_init(void);
 
 void led_init(void)
 {
+	LOG_INFO("before LED support initialized");
 	led_hw_init();
 	led_logic_init();
+	LOG_INFO("LED support initialized");
 }
 
 static void led_hw_init(void)

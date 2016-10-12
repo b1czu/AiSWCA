@@ -1,8 +1,6 @@
 #ifndef __LED_H
 #define __LED_H
 
-#include "main.h"
-
 #define LED1_GPIO_PORT       	GPIOA
 #define LED1_GPIO_PIN         	GPIO_PIN_4
 

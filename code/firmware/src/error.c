@@ -1,4 +1,5 @@
 #include "error.h"
+#include "cli.h"
 
 /*---- Define function -----------------------------------------------*/
 

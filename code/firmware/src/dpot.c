@@ -1,4 +1,8 @@
-#include "dpot.h"	
+#include "cli.h"
+#include "dpot.h"
+#include "error.h"
+#include "stm32f070x6.h"
+#include "stm32f0xx_hal.h"
 
 /*---- Define function -----------------------------------------------*/
 
@@ -45,6 +49,7 @@ void dpot_init(void)
 {
 	dpot_hw_init();
 	dpot_logic_init();
+	LOG_INFO("DPOT support initialized");
 }
 
 static void dpot_hw_init(void)

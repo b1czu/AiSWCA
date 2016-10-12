@@ -1,7 +1,7 @@
 #ifndef __SYS_H
 #define __SYS_H
 
-#include "main.h"
+#include <stdint.h>
 
 void sys_print_info(void);
 

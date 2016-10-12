@@ -1,4 +1,9 @@
+#include "firmware_cfg.h"
+#include "led.h"
+#include "printf.h"
 #include "sys.h"
+#include "stm32f070x6.h"
+#include "stm32f0xx_hal.h"
 
 /*---- Define function -----------------------------------------------*/
 
@@ -27,19 +32,19 @@ void sys_print_info(void)
 /* SYSTEM IRQ */
 void SysTick_Handler(void)
 {
-  /* LED task */
-	static uint64_t i = 0;
-  if(sys_time % 1000 == 0){
-   	led_1Toggle();
-   	LOG_INFO("%s %d","TEST",(int)i++ );
-  }
-  
-  /* Next task */	
-  HAL_IncTick();
-  HAL_SYSTICK_IRQHandler();
+	/* LED task */
+	//static uint64_t i = 0;
+	if(sys_time % 1000 == 0){
+		led_1Toggle();
+		//LOG_INFO("%s %d","TEST",(int)i++ );
+	}
 
-  /* Increment system time */
-  sys_time++;
+	/* Next task */
+	HAL_IncTick();
+	HAL_SYSTICK_IRQHandler();
+
+	/* Increment system time */
+	sys_time++;
 }
 
 void HardFault_Handler(void)

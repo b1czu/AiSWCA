@@ -1,7 +1,7 @@
 #ifndef __ERROR_H
 #define __ERROR_H
 
-#include "main.h"
+#include <stdint.h>
 
 void err_handler(char *file,uint32_t line,char* info);
 

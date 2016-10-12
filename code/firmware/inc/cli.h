@@ -1,6 +1,9 @@
 #ifndef __CLI_H
 #define __CLI_H
 
+#include "firmware_cfg.h"
+#include "printf.h"
+
 #if LOGGER_SHORT_DEBUG
 
 #define LOG_INFO(M, ...) do{  if(INFO_LOG)printf_(INFO_LOG_MSG M "\n\r", \

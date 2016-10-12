@@ -1,5 +1,9 @@
+#include <string.h>
+#include "cli.h"
+#include "error.h"
 #include "kbus.h"
-#include "main.h"
+#include "stm32f070x6.h"
+#include "stm32f0xx_hal.h"
 
 /*---- Define function ------------------------------------------------*/
 

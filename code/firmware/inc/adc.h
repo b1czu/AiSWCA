@@ -1,8 +1,6 @@
 #ifndef __ADC_H
 #define __ADC_H
 
-#include "main.h"
-
 /*
 
 ADC peripheral to perform conversions with analog watchdog and out-of-window interruptions enabled.

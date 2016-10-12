@@ -1,5 +1,7 @@
 #include "adc.h"
-#include "main.h"
+#include "cli.h"
+#include "stm32f070x6.h"
+#include "stm32f0xx_hal.h"
 
 /*---- Variable ------------------------------------------------------*/
 
@@ -53,6 +55,7 @@ void adc_init(void){
 	adc_tim_config();
 	adc_logic_init();
 	adc_hw_init();
+	LOG_INFO("KBUS support initialized");
 }
 
 
