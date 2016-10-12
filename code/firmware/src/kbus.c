@@ -296,7 +296,7 @@ void USART1_IRQHandler(void)
 	{
 		__HAL_UART_CLEAR_PEFLAG(&huart1);
 
-		LOG_ERROR("UART PARITY ERROR\n");
+		LOG_ERROR("KBUS PARITY ERROR\n");
 	}
 
 	/* UART frame error interrupt occurred --------------------------------------*/
@@ -305,7 +305,7 @@ void USART1_IRQHandler(void)
 	{
 		__HAL_UART_CLEAR_FEFLAG(&huart1);
 
-		LOG_ERROR("UART FRAME ERROR\n");
+		LOG_ERROR("KBUS FRAME ERROR\n");
 	}
 
 	/* UART noise error interrupt occurred --------------------------------------*/
@@ -314,7 +314,7 @@ void USART1_IRQHandler(void)
 	{
 		__HAL_UART_CLEAR_NEFLAG(&huart1);
 
-		LOG_ERROR("UART NOISE ERROR\n");
+		LOG_ERROR("KBUS NOISE ERROR\n");
 	}
 
 	/* UART Over-Run interrupt occurred -----------------------------------------*/
@@ -323,7 +323,7 @@ void USART1_IRQHandler(void)
 	{
 		__HAL_UART_CLEAR_OREFLAG(&huart1);
 
-		LOG_ERROR("UART OVERRUN ERROR\n");
+		LOG_ERROR("KBUS OVERRUN ERROR\n");
 	}
 
 	if ((__HAL_UART_GET_IT(&huart1, UART_IT_RXNE) != RESET)
