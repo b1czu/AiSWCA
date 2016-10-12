@@ -127,54 +127,71 @@ static void kbus_frame_parser(uint8_t* frame_p, uint8_t frame_len )
 {
 	if(!memcmp(frame_p, KBUS_KEY_IN, frame_len + 2)){
 		LOG_INFO("KBUS_KEY_IN");
+		return;
 	}
 	if(!memcmp(frame_p, KBUS_KEY_OUT, frame_len + 2)){
 		LOG_INFO("KBUS_KEY_OUT");
+		return;
 	}
 	if(!memcmp(frame_p, KBUS_MFL_VOL_UP, frame_len + 2)){
 		LOG_INFO("KBUS_MFL_VOL_UP pressed");
+		return;
 	}
 	if(!memcmp(frame_p, KBUS_MFL_VOL_DOWN, frame_len + 2)){
 		LOG_INFO("KBUS_MFL_VOL_DOWN pressed");
+		return;
 	}
 	if(!memcmp(frame_p, KBUS_MFL_NEXT_PRESS, frame_len + 2)){
 		LOG_INFO("KBUS_MFL_NEXT_PRESS pressed");
+		return;
 	}
 	if(!memcmp(frame_p, KBUS_MFL_NEXT_PRESS_LONG, frame_len + 2)){
 		LOG_INFO("KBUS_MFL_NEXT_PRESS_LONG pressed");
+		return;
 	}
 	if(!memcmp(frame_p, KBUS_MFL_NEXT_RELEASE, frame_len + 2)){
-		LOG_INFO("KBUS_MFL_NEXT_RELEASE pressed");
+		LOG_INFO("KBUS_MFL_NEXT_RELEASE released");
+		return;
 	}
 	if(!memcmp(frame_p, KBUS_MFL_PREVIOUS_PRESS, frame_len + 2)){
 		LOG_INFO("KBUS_MFL_PREVIOUS_PRESS pressed");
+		return;
 	}
 	if(!memcmp(frame_p, KBUS_MFL_PREVIOUS_PRESS_LONG, frame_len + 2)){
 		LOG_INFO("KBUS_MFL_PREVIOUS_PRESS_LONG pressed");
+		return;
 	}
 	if(!memcmp(frame_p, KBUS_MFL_PREVIOUS_RELEASE, frame_len + 2)){
-		LOG_INFO("KBUS_MFL_PREVIOUS_RELEASE pressed");
+		LOG_INFO("KBUS_MFL_PREVIOUS_RELEASE released");
+		return;
 	}
 	if(!memcmp(frame_p, KBUS_MFL_SEND_END_PRESS, frame_len + 2)){
 		LOG_INFO("KBUS_MFL_SEND_END_PRESS pressed");
+		return;
 	}
 	if(!memcmp(frame_p, KBUS_MFL_SEND_END_PRESS_LONG, frame_len + 2)){
 		LOG_INFO("KBUS_MFL_SEND_END_PRESS_LONG pressed");
+		return;
 	}
 	if(!memcmp(frame_p, KBUS_MFL_SEND_END_RELEASE, frame_len + 2)){
-		LOG_INFO("KBUS_MFL_SEND_END_RELEASE pressed");
+		LOG_INFO("KBUS_MFL_SEND_END_RELEASE released");
+		return;
 	}
 	if(!memcmp(frame_p, KBUS_MFL_RT_PRESS, frame_len + 2)){
 		LOG_INFO("KBUS_MFL_RT_PRESS pressed");
+		return;
 	}
 	if(!memcmp(frame_p, KBUS_IGNITION_OFF, frame_len + 2)){
 		LOG_INFO("KBUS_IGNITION_OFF");
+		return;
 	}
 	if(!memcmp(frame_p, KBUS_IGNITION_POS1, frame_len + 2)){
 		LOG_INFO("KBUS_IGNITION_POS1");
+		return;
 	}
 	if(!memcmp(frame_p, KBUS_IGNITION_POS2, frame_len + 2)){
 		LOG_INFO("KBUS_IGNITION_POS2");
+		return;
 	}
 }
 

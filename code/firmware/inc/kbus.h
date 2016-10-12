@@ -61,7 +61,7 @@ typedef enum
  */
 typedef struct
 {
-	uint8_t kBuffer[KBUS_MAX_FRAME_SIZE * 5]; //buffer space for 5 frames of maximum size
+	uint8_t kBuffer[KBUS_MAX_FRAME_SIZE * 20]; //buffer space for 20 frames of maximum size
 	KBUS_BUFFER_t kFifo;
 	KBUS_FrameState kState;
 } KBUS_Handle_t;

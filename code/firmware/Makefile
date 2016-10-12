@@ -50,7 +50,7 @@ INCLUDEDIRS += ./ext_lib/fifo/
 # "-O2" - optimize even more
 # "-Os" - optimize for size 
 # "-O3" - optimize yet more 
-OPTIMIZATION = -O0
+OPTIMIZATION = -O3
 
 # C language standard
 # "c89" / "iso9899:1990" 
