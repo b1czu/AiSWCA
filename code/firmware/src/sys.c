@@ -1,6 +1,7 @@
 #include "firmware_cfg.h"
 #include "led.h"
 #include "printf.h"
+#include "dpot.h"
 #include "sys.h"
 #include "stm32f070x6.h"
 #include "stm32f0xx_hal.h"
@@ -38,6 +39,7 @@ void SysTick_Handler(void)
 		led_1Toggle();
 		//LOG_INFO("%s %d","TEST",(int)i++ );
 	}
+	dpot_systick_handler();
 
 	/* Next task */
 	HAL_IncTick();

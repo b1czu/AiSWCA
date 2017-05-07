@@ -27,5 +27,7 @@ void dpot_init(void);
 void dpot_set_value(DPOT_Address Address, uint8_t value);
 void dpot_enable(void);
 void dpot_disable(void);
+void dpot_blip(void);
+void dpot_systick_handler(void);
 
 #endif /* __DPOT_H */

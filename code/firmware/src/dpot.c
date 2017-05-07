@@ -10,7 +10,8 @@
 #define DPOT_DISABLE()            {DPOT_ENABLE_GPIO_PORT->BSRR=(uint32_t)DPOT_ENABLE_PIN<<16; }
 
 /*---- Static variable -----------------------------------------------*/
-
+static int dpot_timer;
+static uint8_t dpot_blip_active = 0;
 static SPI_HandleTypeDef hspi1;
 
 /*---- Static function declaration -----------------------------------*/
@@ -27,6 +28,12 @@ void dpot_enable(void)
 void dpot_disable(void)
 {
 	DPOT_DISABLE();
+}
+
+void dpot_blip(void)
+{
+	DPOT_ENABLE();
+	dpot_blip_active = 1;
 }
 
 void dpot_set_value(DPOT_Address Address, uint8_t value)
@@ -50,6 +57,18 @@ void dpot_init(void)
 	dpot_hw_init();
 	dpot_logic_init();
 	LOG_INFO("DPOT support initialized");
+}
+
+void dpot_systick_handler(void) {
+	if (dpot_blip_active == 1) {
+		dpot_timer++;
+	}
+	if (dpot_timer > 100) {
+		dpot_blip_active = 0;
+		dpot_timer = 0;
+		dpot_disable();
+	}
+
 }
 
 static void dpot_hw_init(void)
@@ -99,7 +118,8 @@ static void dpot_hw_init(void)
 }
 
 static void dpot_logic_init(void)
-{	/* Set pot state to disabled (infinite resistance) */
+{	dpot_timer = 0;
+	/* Set pot state to disabled (infinite resistance) */
 	dpot_disable();
 	/* Set pot to maximum resistance */
 	dpot_set_value(DPOT_ADDRESS_POT_0, 0);
