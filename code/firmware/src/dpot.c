@@ -12,6 +12,7 @@
 /*---- Static variable -----------------------------------------------*/
 static int dpot_timer;
 static uint8_t dpot_blip_active = 0;
+static uint16_t dpot_blip_time = 0;
 static SPI_HandleTypeDef hspi1;
 
 /*---- Static function declaration -----------------------------------*/
@@ -28,12 +29,21 @@ void dpot_enable(void)
 void dpot_disable(void)
 {
 	DPOT_DISABLE();
+	/* Set pot to maximum resistance (just to be sure)*/
+	dpot_set_value(DPOT_ADDRESS_POT_0, 0);
 }
 
-void dpot_blip(void)
+void dpot_blip(uint16_t ms)
 {
 	DPOT_ENABLE();
 	dpot_blip_active = 1;
+	dpot_blip_time = ms;
+}
+
+void dpot_blip_cancel(void)
+{
+	dpot_blip_active = 0;
+	dpot_timer = 0;
 }
 
 void dpot_set_value(DPOT_Address Address, uint8_t value)
@@ -63,7 +73,7 @@ void dpot_systick_handler(void) {
 	if (dpot_blip_active == 1) {
 		dpot_timer++;
 	}
-	if (dpot_timer > 100) {
+	if (dpot_timer > dpot_blip_time) {
 		dpot_blip_active = 0;
 		dpot_timer = 0;
 		dpot_disable();

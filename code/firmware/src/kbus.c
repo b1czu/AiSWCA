@@ -137,23 +137,26 @@ static void kbus_frame_parser(uint8_t* frame_p, uint8_t frame_len )
 	}
 	if(!memcmp(frame_p, KBUS_MFL_VOL_UP, frame_len + 2)){
 		dpot_set_value(DPOT_ADDRESS_POT_0, RADIO_VOLUME_UP_BTN);
-		dpot_blip();
+		dpot_blip(200);
 		LOG_INFO("KBUS_MFL_VOL_UP pressed");
 		return;
 	}
 	if(!memcmp(frame_p, KBUS_MFL_VOL_DOWN, frame_len + 2)){
 		dpot_set_value(DPOT_ADDRESS_POT_0, RADIO_VOLUME_DOWN_BTN);
-		dpot_blip();
+		dpot_blip(200);
 		LOG_INFO("KBUS_MFL_VOL_DOWN pressed");
 		return;
 	}
 	if(!memcmp(frame_p, KBUS_MFL_NEXT_PRESS, frame_len + 2)){
 		dpot_set_value(DPOT_ADDRESS_POT_0, RADIO_TUNE_UP_BTN);
-		dpot_enable();
+		dpot_blip(900);
 		LOG_INFO("KBUS_MFL_NEXT_PRESS pressed");
 		return;
 	}
 	if(!memcmp(frame_p, KBUS_MFL_NEXT_PRESS_LONG, frame_len + 2)){
+		dpot_blip_cancel();
+		dpot_set_value(DPOT_ADDRESS_POT_0, RADIO_TUNE_UP_BTN);
+		dpot_enable();
 		LOG_INFO("KBUS_MFL_NEXT_PRESS_LONG pressed");
 		return;
 	}
@@ -164,11 +167,14 @@ static void kbus_frame_parser(uint8_t* frame_p, uint8_t frame_len )
 	}
 	if(!memcmp(frame_p, KBUS_MFL_PREVIOUS_PRESS, frame_len + 2)){
 		dpot_set_value(DPOT_ADDRESS_POT_0, RADIO_TUNE_DOWN_BTN);
-		dpot_enable();
+		dpot_blip(900);
 		LOG_INFO("KBUS_MFL_PREVIOUS_PRESS pressed");
 		return;
 	}
 	if(!memcmp(frame_p, KBUS_MFL_PREVIOUS_PRESS_LONG, frame_len + 2)){
+		dpot_blip_cancel();
+		dpot_set_value(DPOT_ADDRESS_POT_0, RADIO_TUNE_DOWN_BTN);
+		dpot_enable();
 		LOG_INFO("KBUS_MFL_PREVIOUS_PRESS_LONG pressed");
 		return;
 	}
@@ -180,10 +186,13 @@ static void kbus_frame_parser(uint8_t* frame_p, uint8_t frame_len )
 	if(!memcmp(frame_p, KBUS_MFL_SEND_END_PRESS, frame_len + 2)){
 		LOG_INFO("KBUS_MFL_SEND_END_PRESS pressed");
 		dpot_set_value(DPOT_ADDRESS_POT_0, RADIO_SOURCE_BTN);
-		dpot_enable();
+		dpot_blip(900);
 		return;
 	}
 	if(!memcmp(frame_p, KBUS_MFL_SEND_END_PRESS_LONG, frame_len + 2)){
+		dpot_blip_cancel();
+		dpot_set_value(DPOT_ADDRESS_POT_0, RADIO_SOURCE_BTN);
+		dpot_enable();
 		LOG_INFO("KBUS_MFL_SEND_END_PRESS_LONG pressed");
 		return;
 	}
@@ -194,7 +203,7 @@ static void kbus_frame_parser(uint8_t* frame_p, uint8_t frame_len )
 	}
 	if(!memcmp(frame_p, KBUS_MFL_RT_PRESS, frame_len + 2)){
 		dpot_set_value(DPOT_ADDRESS_POT_0, RADIO_ATT_BTN);
-		dpot_blip();
+		dpot_blip(200);
 		LOG_INFO("KBUS_MFL_RT_PRESS pressed");
 		return;
 	}
